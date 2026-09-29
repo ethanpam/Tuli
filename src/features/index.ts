@@ -7,6 +7,7 @@ import { createLeaderboardFeature } from "./leaderboard.js";
 import { levelsBoard, levelsFeature } from "./levels/index.js";
 import { quotesFeature } from "./quotes/index.js";
 import { createSetupFeature } from "./setup.js";
+import { shopFeature } from "./shop/index.js";
 
 // Every part of Tuli, in the order they see each message.
 const baseFeatures: Feature[] = [
@@ -16,6 +17,7 @@ const baseFeatures: Feature[] = [
   quotesFeature,
   economyFeature,
   levelsFeature,
+  shopFeature,
   createLeaderboardFeature([levelsBoard, pointsBoard]),
 ];
 

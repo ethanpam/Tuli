@@ -265,7 +265,7 @@ export const levelsFeature: Feature = {
   name: "Levels",
   slashCommands: [rankCommand],
   admin: levelsAdmin,
-  permissions: { ManageRoles: "give level and shop reward roles" },
+  permissions: { ManageRoles: "give level reward roles" },
 
   async onMessage(message) {
     const result = awardMessageXp(message.guildId, message.author.id, message.member?.displayName ?? message.author.displayName);

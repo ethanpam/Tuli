@@ -56,6 +56,7 @@ Tuli stores its data in `data/tuli.db` (SQLite, gitignored). Set `DATABASE_PATH`
 | `/points history`                       | Your recent points activity (only you see it)       |
 | `/rank [member]`                        | See a level, XP progress, rank and message count    |
 | `/leaderboard [board]`                  | See who's on top by level or points                 |
+| `/shop`                                 | Browse the shop, buy things with points, and check your orders |
 
 ### Staff commands
 
@@ -72,6 +73,9 @@ Staff commands live under `/admin`, which only members with **Manage Server** ca
 | `/admin levels remove-reward`, `rewards` | Manage level reward roles                                   |
 | `/admin levels announcements`    | Announce level-ups where they happen, in one channel, or not at all |
 | `/admin levels set member level` | Set someone's level, e.g. to carry it over from another bot         |
+| `/admin shop add`                | Add an item: give it a role to hand out automatically, or leave the role empty for prizes staff deliver (real prizes, trivia hints) |
+| `/admin shop edit`, `remove`     | Change prices, descriptions and stock, or remove an item            |
+| `/admin shop orders`             | Deliver or refund orders waiting for staff (also possible from the buttons in the staff log) |
 
 Quote numbers are per server. Tuli won't save the same thing from the same person twice (ignoring capitalization, extra spaces, and quote marks). Commands register automatically when Tuli starts; if they don't appear, reload Discord with Ctrl+R (Cmd+R on Mac).
 
@@ -83,5 +87,5 @@ Quote numbers are per server. Tuli won't save the same thing from the same perso
 - [ ] Moderation (scammer protection)
 - [ ] External feeds (ISU opportunities)
 - [x] Currency: points tied to each member's Discord ID
-- [ ] Item shop: redeem points for roles and other rewards
+- [x] Item shop: redeem points for roles and other rewards
 - [x] Levels: XP from chatting, roles at XP milestones

@@ -5,7 +5,9 @@ import {
   EmbedBuilder,
   MessageFlags,
   type Client,
-  type RepliableInteraction,
+  type CommandInteraction,
+  type MessageComponentInteraction,
+  type ModalSubmitInteraction,
 } from "discord.js";
 
 /** Tuli's palette. Every embed uses one of these so the bot looks consistent. */
@@ -38,9 +40,11 @@ export function notice(kind: NoticeKind, text: string): EmbedBuilder {
   return embed(style.color).setDescription(`${style.icon} ${text}`);
 }
 
+type Repliable = CommandInteraction | MessageComponentInteraction | ModalSubmitInteraction;
+
 /** Answers an interaction with a notice only the user can see, whatever state the interaction is in. */
 export async function replyNotice(
-  interaction: RepliableInteraction,
+  interaction: Repliable,
   kind: NoticeKind,
   text: string,
   extraEmbeds: EmbedBuilder[] = [],
