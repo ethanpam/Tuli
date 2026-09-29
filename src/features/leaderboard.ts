@@ -29,7 +29,7 @@ export function createLeaderboardFeature(boards: Board[]): Feature {
     });
     const leaderboard = embed(Colors.gold)
       .setTitle(`${board.emoji} ${board.label} leaderboard`)
-      .setDescription(lines.join("\n"))
+      .setDescription(lines.join("\n") || "Nobody's here yet.")
       .setFooter({ text: `Page ${page + 1} of ${pageCount} · ${plural(total, "member")} ranked` });
     return { embeds: [leaderboard], components: pageButtons(PREFIX, page, pageCount, [board.id]) };
   }

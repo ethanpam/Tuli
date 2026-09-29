@@ -1,18 +1,46 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { checkMessage, isLookalikeDomain, linkDomains, RepeatTracker, repeatKey } from "../src/features/moderation/detector.js";
+import {
+  checkMessage,
+  isLookalikeDomain,
+  linkDomains,
+  RepeatTracker,
+  repeatKey,
+} from "../src/features/moderation/detector.js";
 
 const check = (content: string, canMentionEveryone = false) => checkMessage({ content, canMentionEveryone });
 
 test("finds link domains", () => {
-  assert.deepEqual(linkDomains("go to https://www.Discord.com/app and http://evil.ru:8080/x"), ["discord.com", "evil.ru"]);
+  assert.deepEqual(linkDomains("go to https://www.Discord.com/app and http://evil.ru:8080/x"), [
+    "discord.com",
+    "evil.ru",
+  ]);
 });
 
 test("spots fake Discord and Steam domains but not the real ones", () => {
-  for (const fake of ["dlscord.gift", "disc0rd-nitro.com", "discorcl.com", "discord-gifts.ru", "steamcommunlty.com", "stearncommunity.ru", "discordnitro.click"]) {
+  for (const fake of [
+    "dlscord.gift",
+    "disc0rd-nitro.com",
+    "discorcl.com",
+    "discord-gifts.ru",
+    "steamcommunlty.com",
+    "stearncommunity.ru",
+    "discordnitro.click",
+  ]) {
     assert.ok(isLookalikeDomain(fake), fake);
   }
-  for (const real of ["discord.com", "discord.gg", "cdn.discordapp.com", "media.discordapp.net", "steamcommunity.com", "store.steampowered.com", "github.com", "iastate.edu", "youtube.com", "docs.google.com"]) {
+  for (const real of [
+    "discord.com",
+    "discord.gg",
+    "cdn.discordapp.com",
+    "media.discordapp.net",
+    "steamcommunity.com",
+    "store.steampowered.com",
+    "github.com",
+    "iastate.edu",
+    "youtube.com",
+    "docs.google.com",
+  ]) {
     assert.ok(!isLookalikeDomain(real), real);
   }
 });
@@ -52,13 +80,21 @@ test("repeat tracker catches the same message in three channels within a minute"
   assert.equal(post("a", 1_000), null, "same channel twice isn't a burst");
   assert.equal(post("b", 2_000), null);
   const burst = post("c", 3_000);
-  assert.deepEqual(burst?.map((m) => m.channelId), ["a", "a", "b", "c"], "every copy is returned so all can be deleted");
+  assert.deepEqual(
+    burst?.map((m) => m.channelId),
+    ["a", "a", "b", "c"],
+    "every copy is returned so all can be deleted",
+  );
   assert.equal(post("d", 4_000), null, "each burst is reported once");
 
   const slow = new RepeatTracker(60_000, 3);
   slow.record("g", "u", { channelId: "a", messageId: "1", key: "text:hello there", at: 0 });
   slow.record("g", "u", { channelId: "b", messageId: "2", key: "text:hello there", at: 70_000 });
-  assert.equal(slow.record("g", "u", { channelId: "c", messageId: "3", key: "text:hello there", at: 80_000 }), null, "old copies expire");
+  assert.equal(
+    slow.record("g", "u", { channelId: "c", messageId: "3", key: "text:hello there", at: 80_000 }),
+    null,
+    "old copies expire",
+  );
 });
 
 test("repeat keys ignore short chatter", () => {

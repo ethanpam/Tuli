@@ -24,15 +24,21 @@ const selectAllFeeds = db.prepare("SELECT * FROM feeds ORDER BY id");
 const deleteFeed = db.prepare("DELETE FROM feeds WHERE guild_id = $guildId AND id = $id");
 const deleteFeedItems = db.prepare("DELETE FROM feed_items WHERE feed_id = $feedId");
 const updateCheck = db.prepare("UPDATE feeds SET last_checked_at = $now, last_error = $error WHERE id = $id");
-const insertSeen = db.prepare("INSERT OR IGNORE INTO feed_items (feed_id, item_key, seen_at) VALUES ($feedId, $key, $now)");
+const insertSeen = db.prepare(
+  "INSERT OR IGNORE INTO feed_items (feed_id, item_key, seen_at) VALUES ($feedId, $key, $now)",
+);
 const selectSeen = db.prepare("SELECT 1 FROM feed_items WHERE feed_id = $feedId AND item_key = $key");
 const pruneSeenRows = db.prepare("DELETE FROM feed_items WHERE feed_id = $feedId AND seen_at < $before");
 
-export function addFeed(guildId: string, fields: { channelId: string; url: string; title: string; keywords: string }): Feed {
+export function addFeed(
+  guildId: string,
+  fields: { channelId: string; url: string; title: string; keywords: string },
+): Feed {
   try {
     return insertFeed.get({ guildId, ...fields, now: Date.now() }) as unknown as Feed;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("UNIQUE")) throw new FeedError("That feed is already set up for that channel.");
+    if (error instanceof Error && error.message.includes("UNIQUE"))
+      throw new FeedError("That feed is already set up for that channel.");
     throw error;
   }
 }

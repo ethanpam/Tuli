@@ -73,7 +73,9 @@ export function createSetupFeature(allFeatures: () => Feature[]): Feature {
       description: "Tuli's basic settings",
       build: (group) =>
         group
-          .addSubcommand((sub) => sub.setName("overview").setDescription("See all of Tuli's settings and check its permissions"))
+          .addSubcommand((sub) =>
+            sub.setName("overview").setDescription("See all of Tuli's settings and check its permissions"),
+          )
           .addSubcommand((sub) =>
             sub
               .setName("log-channel")
@@ -91,7 +93,11 @@ export function createSetupFeature(allFeatures: () => Feature[]): Feature {
               .setName("timezone")
               .setDescription("Your server's timezone, for daily resets and question schedules")
               .addStringOption((o) =>
-                o.setName("timezone").setDescription("Start typing a city, e.g. Chicago").setRequired(true).setAutocomplete(true),
+                o
+                  .setName("timezone")
+                  .setDescription("Start typing a city, e.g. Chicago")
+                  .setRequired(true)
+                  .setAutocomplete(true),
               ),
           ),
 
@@ -132,14 +138,27 @@ export function createSetupFeature(allFeatures: () => Feature[]): Feature {
             const channel = interaction.options.getChannel("channel", true, [ChannelType.GuildText]);
             const canPost = channel
               .permissionsFor(interaction.client.user)
-              ?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks]);
+              ?.has([
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.EmbedLinks,
+              ]);
             if (!canPost) {
-              await replyNotice(interaction, "error", `Tuli can't post in ${channel}. Give it View Channel, Send Messages and Embed Links there first.`);
+              await replyNotice(
+                interaction,
+                "error",
+                `Tuli can't post in ${channel}. Give it View Channel, Send Messages and Embed Links there first.`,
+              );
               return;
             }
             setSetting(guild.id, "logChannelId", channel.id);
             await channel.send({
-              embeds: [notice("info", "Tuli will post staff alerts here: scam reports, shop orders, and question suggestions.")],
+              embeds: [
+                notice(
+                  "info",
+                  "Tuli will post staff alerts here: scam reports, shop orders, and question suggestions.",
+                ),
+              ],
             });
             await replyNotice(interaction, "success", `Staff alerts will go to ${channel}.`);
             return;
@@ -148,11 +167,19 @@ export function createSetupFeature(allFeatures: () => Feature[]): Feature {
           case "timezone": {
             const timezone = interaction.options.getString("timezone", true);
             if (!isValidTimezone(timezone)) {
-              await replyNotice(interaction, "error", `"${timezone}" isn't a timezone I know. Pick one from the list as you type.`);
+              await replyNotice(
+                interaction,
+                "error",
+                `"${timezone}" isn't a timezone I know. Pick one from the list as you type.`,
+              );
               return;
             }
             setSetting(guild.id, "timezone", timezone);
-            await replyNotice(interaction, "success", `Timezone set to **${timezone}**. It's ${localTime(timezone)} there now.`);
+            await replyNotice(
+              interaction,
+              "success",
+              `Timezone set to **${timezone}**. It's ${localTime(timezone)} there now.`,
+            );
             return;
           }
         }
@@ -161,7 +188,9 @@ export function createSetupFeature(allFeatures: () => Feature[]): Feature {
       async autocomplete(interaction) {
         const typed = interaction.options.getFocused().toLowerCase().replaceAll(" ", "_");
         const matches = TIMEZONES.filter((timezone) => timezone.toLowerCase().includes(typed)).slice(0, 25);
-        await interaction.respond(matches.map((timezone) => ({ name: `${timezone} (${localTime(timezone)})`, value: timezone })));
+        await interaction.respond(
+          matches.map((timezone) => ({ name: `${timezone} (${localTime(timezone)})`, value: timezone })),
+        );
       },
     },
   };

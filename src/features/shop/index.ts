@@ -79,10 +79,14 @@ function shopView(member: GuildMember, requestedPage: number): InteractionUpdate
   const pageCount = pageCountFor(countItems(guild.id), PAGE_SIZE);
   const page = clampPage(requestedPage, pageCount);
   const items = listItems(guild.id, PAGE_SIZE, page * PAGE_SIZE);
+  if (items.length === 0)
+    return { embeds: [notice("info", "The shop is empty right now. Check back soon!")], components: [] };
 
   const storefront = embed()
     .setTitle(`🛍️ ${guild.name} shop`)
-    .setDescription(`You have **${formatPoints(getBalance(guild.id, member.id))}**. Pick an item below to see more or buy it.`)
+    .setDescription(
+      `You have **${formatPoints(getBalance(guild.id, member.id))}**. Pick an item below to see more or buy it.`,
+    )
     .addFields(
       items.map((item) => ({
         name: `${item.name} · ${formatPoints(item.price)}`,
@@ -129,13 +133,24 @@ function itemView(member: GuildMember, item: ShopItem, page: number): Interactio
     .addFields(
       { name: "Price", value: formatPoints(item.price), inline: true },
       { name: "You have", value: formatPoints(balance), inline: true },
-      { name: "You get", value: item.role_id ? `The <@&${item.role_id}> role, right away` : "Staff will deliver it after you buy" },
+      {
+        name: "You get",
+        value: item.role_id ? `The <@&${item.role_id}> role, right away` : "Staff will deliver it after you buy",
+      },
     );
-  if (item.stock !== null) details.addFields({ name: "Stock", value: soldOut ? "Sold out" : `${item.stock} left`, inline: true });
+  if (item.stock !== null)
+    details.addFields({ name: "Stock", value: soldOut ? "Sold out" : `${item.stock} left`, inline: true });
   if (problem) details.addFields({ name: "Can't buy yet", value: problem });
 
-  const buy = button(`shop-buy:${item.id}:${page}`, `Buy for ${formatPoints(item.price)}`, ButtonStyle.Success).setDisabled(problem !== null);
-  return { embeds: [details], components: [new ActionRowBuilder<ButtonBuilder>().addComponents(buy, button(`shop-page:${page}`, "◀ Back"))] };
+  const buy = button(
+    `shop-buy:${item.id}:${page}`,
+    `Buy for ${formatPoints(item.price)}`,
+    ButtonStyle.Success,
+  ).setDisabled(problem !== null);
+  return {
+    embeds: [details],
+    components: [new ActionRowBuilder<ButtonBuilder>().addComponents(buy, button(`shop-page:${page}`, "◀ Back"))],
+  };
 }
 
 const STATUS_LABELS: Record<Order["status"], string> = {
@@ -159,8 +174,11 @@ function myOrdersView(member: GuildMember, page: number): InteractionUpdateOptio
 // ─── What staff see ──────────────────────────────────────────────────────────
 
 function orderEmbed(order: Order) {
-  const color = order.status === "pending" ? Colors.warning : order.status === "delivered" ? Colors.success : Colors.danger;
-  const status = order.handled_by ? `${STATUS_LABELS[order.status]} by <@${order.handled_by}>` : STATUS_LABELS[order.status];
+  const color =
+    order.status === "pending" ? Colors.warning : order.status === "delivered" ? Colors.success : Colors.danger;
+  const status = order.handled_by
+    ? `${STATUS_LABELS[order.status]} by <@${order.handled_by}>`
+    : STATUS_LABELS[order.status];
   return embed(color)
     .setTitle(`🛍️ Order #${order.id}: ${order.item_name}`)
     .addFields(
@@ -216,7 +234,9 @@ const shopComponents: ComponentHandler[] = [
     async execute(interaction, [page = "0"]) {
       if (!interaction.isStringSelectMenu()) return;
       const item = getItem(interaction.guildId, Number(interaction.values[0]));
-      await interaction.update(item ? itemView(interaction.member, item, Number(page)) : shopView(interaction.member, Number(page)));
+      await interaction.update(
+        item ? itemView(interaction.member, item, Number(page)) : shopView(interaction.member, Number(page)),
+      );
     },
   },
   {
@@ -230,7 +250,8 @@ const shopComponents: ComponentHandler[] = [
     async execute(interaction, [itemId = "0", pageArg = "0"]) {
       const { member, guild } = interaction;
       const page = Number(pageArg);
-      const fail = (text: string) => interaction.update({ embeds: [notice("error", text)], components: [backRow(page)] });
+      const fail = (text: string) =>
+        interaction.update({ embeds: [notice("error", text)], components: [backRow(page)] });
 
       const item = getItem(guild.id, Number(itemId));
       if (!item) {
@@ -262,14 +283,30 @@ const shopComponents: ComponentHandler[] = [
         if (problem) {
           refundOrder(guild.id, order.id, interaction.client.user.id);
           await sendStaffLog(guild, {
-            embeds: [notice("warning", `${member} tried to buy **${escapeMarkdown(item.name)}** but Tuli couldn't give the role, so they were refunded. ${problem}`)],
+            embeds: [
+              notice(
+                "warning",
+                `${member} tried to buy **${escapeMarkdown(item.name)}** but Tuli couldn't give the role, so they were refunded. ${problem}`,
+              ),
+            ],
           });
           await fail("Tuli couldn't give you that role, so your points were refunded. Staff have been told.");
           return;
         }
-        await sendStaffLog(guild, { embeds: [notice("info", `${member} bought **${escapeMarkdown(item.name)}** for ${formatPoints(item.price)} and got <@&${item.role_id}>.`)] });
+        await sendStaffLog(guild, {
+          embeds: [
+            notice(
+              "info",
+              `${member} bought **${escapeMarkdown(item.name)}** for ${formatPoints(item.price)} and got <@&${item.role_id}>.`,
+            ),
+          ],
+        });
       } else {
-        await sendStaffLog(guild, { content: "New shop order", embeds: [orderEmbed(order)], components: orderButtons(order) });
+        await sendStaffLog(guild, {
+          content: "New shop order",
+          embeds: [orderEmbed(order)],
+          components: orderButtons(order),
+        });
       }
 
       const next = item.role_id
@@ -277,7 +314,10 @@ const shopComponents: ComponentHandler[] = [
         : getSetting(guild.id, "logChannelId")
           ? `Staff have been notified and will deliver it soon. Your order number is **#${order.id}**.`
           : `Let a staff member know so they can deliver it. Your order number is **#${order.id}**.`;
-      const receipt = notice("success", `You bought **${escapeMarkdown(item.name)}** for ${formatPoints(item.price)}.\n${next}`).setFooter({
+      const receipt = notice(
+        "success",
+        `You bought **${escapeMarkdown(item.name)}** for ${formatPoints(item.price)}.\n${next}`,
+      ).setFooter({
         text: `Balance: ${getBalance(guild.id, member.id).toLocaleString("en-US")} points`,
       });
       await interaction.update({ embeds: [receipt], components: [backRow(page)] });
@@ -346,11 +386,19 @@ const shopAdmin: AdminGroup = {
         sub
           .setName("add")
           .setDescription("Add an item to the shop")
-          .addStringOption((o) => o.setName("name").setDescription("What it's called").setRequired(true).setMaxLength(80))
-          .addIntegerOption((o) => o.setName("price").setDescription("Cost in points").setRequired(true).setMinValue(1).setMaxValue(MAX_PRICE))
+          .addStringOption((o) =>
+            o.setName("name").setDescription("What it's called").setRequired(true).setMaxLength(80),
+          )
+          .addIntegerOption((o) =>
+            o.setName("price").setDescription("Cost in points").setRequired(true).setMinValue(1).setMaxValue(MAX_PRICE),
+          )
           .addStringOption((o) => o.setName("description").setDescription("What people get").setMaxLength(200))
-          .addRoleOption((o) => o.setName("role").setDescription("A role to give automatically (leave empty for staff-delivered prizes)"))
-          .addIntegerOption((o) => o.setName("stock").setDescription("How many can be bought (leave empty for unlimited)").setMinValue(0)),
+          .addRoleOption((o) =>
+            o.setName("role").setDescription("A role to give automatically (leave empty for staff-delivered prizes)"),
+          )
+          .addIntegerOption((o) =>
+            o.setName("stock").setDescription("How many can be bought (leave empty for unlimited)").setMinValue(0),
+          ),
       )
       .addSubcommand((sub) =>
         sub
@@ -360,7 +408,9 @@ const shopAdmin: AdminGroup = {
           .addStringOption((o) => o.setName("name").setDescription("New name").setMaxLength(80))
           .addIntegerOption((o) => o.setName("price").setDescription("New price").setMinValue(1).setMaxValue(MAX_PRICE))
           .addStringOption((o) => o.setName("description").setDescription("New description").setMaxLength(200))
-          .addIntegerOption((o) => o.setName("stock").setDescription("How many are left (-1 for unlimited)").setMinValue(-1)),
+          .addIntegerOption((o) =>
+            o.setName("stock").setDescription("How many are left (-1 for unlimited)").setMinValue(-1),
+          ),
       )
       .addSubcommand((sub) =>
         sub
@@ -389,8 +439,13 @@ const shopAdmin: AdminGroup = {
           roleId: role?.id ?? null,
           stock: interaction.options.getInteger("stock"),
         });
-        const staffNote = !role && !getSetting(guildId, "logChannelId") ? "\nTip: set a staff log channel with `/admin setup log-channel` so you're told when someone buys it." : "";
-        await replyNotice(interaction, "success", `Added **${escapeMarkdown(item.name)}** to the shop.${staffNote}`, [itemPreview(item)]);
+        const staffNote =
+          !role && !getSetting(guildId, "logChannelId")
+            ? "\nTip: set a staff log channel with `/admin setup log-channel` so you're told when someone buys it."
+            : "";
+        await replyNotice(interaction, "success", `Added **${escapeMarkdown(item.name)}** to the shop.${staffNote}`, [
+          itemPreview(item),
+        ]);
       } catch (error) {
         if (!(error instanceof ShopError)) throw error;
         await replyNotice(interaction, "error", error.message);
@@ -408,13 +463,18 @@ const shopAdmin: AdminGroup = {
         .setTitle(`🛍️ ${plural(countPendingOrders(guildId), "order")} waiting`)
         .setDescription(
           orders
-            .map((order) => `\`#${order.id}\` **${escapeMarkdown(order.item_name)}** for <@${order.user_id}> · ${time(Math.floor(order.created_at / 1000), TimestampStyles.RelativeTime)}`)
+            .map(
+              (order) =>
+                `\`#${order.id}\` **${escapeMarkdown(order.item_name)}** for <@${order.user_id}> · ${time(Math.floor(order.created_at / 1000), TimestampStyles.RelativeTime)}`,
+            )
             .join("\n"),
         );
       const menu = new StringSelectMenuBuilder()
         .setCustomId("shop-queue")
         .setPlaceholder("Pick an order to handle…")
-        .addOptions(orders.map((order) => ({ label: truncate(`#${order.id} ${order.item_name}`, 100), value: String(order.id) })));
+        .addOptions(
+          orders.map((order) => ({ label: truncate(`#${order.id} ${order.item_name}`, 100), value: String(order.id) })),
+        );
       await interaction.reply({
         embeds: [list],
         components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)],
@@ -431,7 +491,11 @@ const shopAdmin: AdminGroup = {
 
     if (subcommand === "remove") {
       removeItem(guildId, item.id);
-      await replyNotice(interaction, "success", `Removed **${escapeMarkdown(item.name)}** from the shop. Existing orders aren't affected.`);
+      await replyNotice(
+        interaction,
+        "success",
+        `Removed **${escapeMarkdown(item.name)}** from the shop. Existing orders aren't affected.`,
+      );
       return;
     }
 
@@ -453,7 +517,9 @@ const shopAdmin: AdminGroup = {
 
   async autocomplete(interaction) {
     const items = searchItems(interaction.guildId, interaction.options.getFocused());
-    await interaction.respond(items.map((item) => ({ name: truncate(`${item.name} · ${item.price} points`, 100), value: String(item.id) })));
+    await interaction.respond(
+      items.map((item) => ({ name: truncate(`${item.name} · ${item.price} points`, 100), value: String(item.id) })),
+    );
   },
 };
 
@@ -479,9 +545,10 @@ export const shopFeature: Feature = {
     return [
       {
         name: "🛍️ Shop",
-        value: [`${plural(countItems(guild.id), "item")} · ${plural(pending, "order")} waiting`, ...warnings].join("\n").slice(0, 1024),
+        value: [`${plural(countItems(guild.id), "item")} · ${plural(pending, "order")} waiting`, ...warnings]
+          .join("\n")
+          .slice(0, 1024),
       },
     ];
   },
 };
-

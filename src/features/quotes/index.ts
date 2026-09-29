@@ -74,7 +74,9 @@ function quoteListPage(guildId: string, authorId: string | undefined, requestedP
   const listEmbed = embed()
     .setTitle(authorName ? `💬 Quotes from ${authorName}` : "💬 All quotes")
     .setDescription(lines.join("\n") || "No quotes here anymore.")
-    .setFooter({ text: `Page ${page + 1} of ${pageCount} · ${plural(total, "quote")} · /quote show to see one in full` });
+    .setFooter({
+      text: `Page ${page + 1} of ${pageCount} · ${plural(total, "quote")} · /quote show to see one in full`,
+    });
   return { embeds: [listEmbed], components: pageButtons(LIST_PREFIX, page, pageCount, [authorId ?? ""]) };
 }
 
@@ -134,7 +136,9 @@ const quoteCommand: SlashCommand = {
         }
         const duplicate = findDuplicateQuote(guildId, author.id, text);
         if (duplicate) {
-          await replyNotice(interaction, "info", `That's already saved as quote #${duplicate.number}.`, [quoteEmbed(duplicate)]);
+          await replyNotice(interaction, "info", `That's already saved as quote #${duplicate.number}.`, [
+            quoteEmbed(duplicate),
+          ]);
           return;
         }
         const saved = addQuote({
@@ -231,14 +235,20 @@ const saveQuoteCommand: MessageCommand = {
       return;
     }
     if (message.content.length > MAX_QUOTE_LENGTH) {
-      await replyNotice(interaction, "error", `That message is too long to quote (max ${MAX_QUOTE_LENGTH} characters).`);
+      await replyNotice(
+        interaction,
+        "error",
+        `That message is too long to quote (max ${MAX_QUOTE_LENGTH} characters).`,
+      );
       return;
     }
     const existing =
       findQuoteByMessage(interaction.guildId, message.id) ??
       findDuplicateQuote(interaction.guildId, message.author.id, message.content);
     if (existing) {
-      await replyNotice(interaction, "info", `That's already saved as quote #${existing.number}.`, [quoteEmbed(existing)]);
+      await replyNotice(interaction, "info", `That's already saved as quote #${existing.number}.`, [
+        quoteEmbed(existing),
+      ]);
       return;
     }
 

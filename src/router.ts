@@ -45,7 +45,9 @@ export function createRouter(features: Feature[]) {
       } catch (error) {
         console.error(`${describe(interaction)} failed:`, error);
         if (interaction.isRepliable()) {
-          await replyNotice(interaction, "error", "Something went wrong on Tuli's end. Please try again.").catch(() => {});
+          await replyNotice(interaction, "error", "Something went wrong on Tuli's end. Please try again.").catch(
+            () => {},
+          );
         }
       }
     },

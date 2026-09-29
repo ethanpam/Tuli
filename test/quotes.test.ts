@@ -48,7 +48,10 @@ test("random, list and count can filter by person", () => {
   for (let i = 1; i <= 12; i++) addQuote(quote({ guild_id: "lists", text: `q${i}`, author_id: i % 3 ? "1" : "2" }));
   assert.equal(countQuotes("lists"), 12);
   assert.equal(countQuotes("lists", "2"), 4);
-  assert.deepEqual(listQuotes("lists", undefined, 5, 10).map((q) => q.number), [11, 12]);
+  assert.deepEqual(
+    listQuotes("lists", undefined, 5, 10).map((q) => q.number),
+    [11, 12],
+  );
   for (let i = 0; i < 10; i++) assert.equal(randomQuote("lists", "2")?.author_id, "2");
   assert.equal(randomQuote("empty-server"), undefined);
 });

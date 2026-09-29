@@ -51,7 +51,8 @@ function checkUrl(input: string): URL {
   } catch {
     throw new FeedError("That isn't a valid link. It should start with https://");
   }
-  if (!["http:", "https:"].includes(url.protocol)) throw new FeedError("Feed links have to start with https:// or http://");
+  if (!["http:", "https:"].includes(url.protocol))
+    throw new FeedError("Feed links have to start with https:// or http://");
   if (isPrivateHost(url.hostname)) throw new FeedError("Tuli can only read feeds from public websites.");
   return url;
 }
@@ -61,14 +62,18 @@ export async function fetchFeed(input: string): Promise<ParsedFeed> {
   let response: Response;
   try {
     response = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT, Accept: "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8" },
+      headers: {
+        "User-Agent": USER_AGENT,
+        Accept: "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8",
+      },
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
     throw new FeedError("Tuli couldn't reach that website.");
   }
   if (!response.ok) throw new FeedError(`The website answered with an error (HTTP ${response.status}).`);
-  if (Number(response.headers.get("content-length") ?? 0) > MAX_FEED_BYTES) throw new FeedError("That feed is too big.");
+  if (Number(response.headers.get("content-length") ?? 0) > MAX_FEED_BYTES)
+    throw new FeedError("That feed is too big.");
   const xml = await response.text();
   if (xml.length > MAX_FEED_BYTES) throw new FeedError("That feed is too big.");
   return parseFeed(xml);
@@ -94,7 +99,9 @@ function feedChannel(guild: Guild, feed: Feed): GuildTextBasedChannel | null {
 /** Records a problem with a feed, telling staff when it first starts failing (not on every check). */
 async function reportProblem(guild: Guild, feed: Feed, problem: string) {
   if (!feed.last_error) {
-    await sendStaffLog(guild, { embeds: [notice("warning", `The **${escapeMarkdown(feed.title)}** feed stopped working: ${problem}`)] });
+    await sendStaffLog(guild, {
+      embeds: [notice("warning", `The **${escapeMarkdown(feed.title)}** feed stopped working: ${problem}`)],
+    });
   }
   recordCheck(feed.id, problem);
 }
@@ -111,7 +118,12 @@ async function checkFeed(guild: Guild, feed: Feed): Promise<void> {
     return reportProblem(guild, feed, error instanceof FeedError ? error.message : "Something went wrong reading it.");
   }
 
-  const fresh = new Set(unseen(feed.id, parsed.items.map((item) => item.key)));
+  const fresh = new Set(
+    unseen(
+      feed.id,
+      parsed.items.map((item) => item.key),
+    ),
+  );
   // Oldest first, and at most a few per check so a busy feed can't flood the channel.
   const toPost = parsed.items
     .filter((item) => fresh.has(item.key) && matchesKeywords(feed, item.title, item.summary))
@@ -156,7 +168,11 @@ function startPolling(client: Client<true>) {
 
 function feedLine(feed: Feed): string {
   const keywords = keywordList(feed);
-  const status = feed.last_error ? `⚠️ ${feed.last_error}` : feed.last_checked_at ? `checked ${time(Math.floor(feed.last_checked_at / 1000), TimestampStyles.RelativeTime)}` : "not checked yet";
+  const status = feed.last_error
+    ? `⚠️ ${feed.last_error}`
+    : feed.last_checked_at
+      ? `checked ${time(Math.floor(feed.last_checked_at / 1000), TimestampStyles.RelativeTime)}`
+      : "not checked yet";
   return `**${escapeMarkdown(feed.title)}** → <#${feed.channel_id}>${keywords.length ? ` · only posts about: ${keywords.join(", ")}` : ""}\n-# ${feed.url} · ${status}`;
 }
 
@@ -169,12 +185,25 @@ const feedsAdmin: AdminGroup = {
         sub
           .setName("add")
           .setDescription("Post new items from a website's RSS or Atom feed in a channel")
-          .addStringOption((o) => o.setName("url").setDescription("The feed link, e.g. https://www.news.iastate.edu/rss.xml").setRequired(true).setMaxLength(500))
+          .addStringOption((o) =>
+            o
+              .setName("url")
+              .setDescription("The feed link, e.g. https://www.news.iastate.edu/rss.xml")
+              .setRequired(true)
+              .setMaxLength(500),
+          )
           .addChannelOption((o) =>
-            o.setName("channel").setDescription("Where to post").setRequired(true).addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+            o
+              .setName("channel")
+              .setDescription("Where to post")
+              .setRequired(true)
+              .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
           )
           .addStringOption((o) =>
-            o.setName("keywords").setDescription("Only post items mentioning one of these, comma-separated (e.g. internship, scholarship)").setMaxLength(300),
+            o
+              .setName("keywords")
+              .setDescription("Only post items mentioning one of these, comma-separated (e.g. internship, scholarship)")
+              .setMaxLength(300),
           ),
       )
       .addSubcommand((sub) => sub.setName("list").setDescription("See the feeds Tuli is following"))
@@ -196,13 +225,28 @@ const feedsAdmin: AdminGroup = {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === "add") {
-      const channel = interaction.options.getChannel("channel", true, [ChannelType.GuildText, ChannelType.GuildAnnouncement]);
-      if (!channel.permissionsFor(interaction.client.user)?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks])) {
-        await replyNotice(interaction, "error", `Tuli can't post in ${channel}. Give it View Channel, Send Messages and Embed Links there.`);
+      const channel = interaction.options.getChannel("channel", true, [
+        ChannelType.GuildText,
+        ChannelType.GuildAnnouncement,
+      ]);
+      if (
+        !channel
+          .permissionsFor(interaction.client.user)
+          ?.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks])
+      ) {
+        await replyNotice(
+          interaction,
+          "error",
+          `Tuli can't post in ${channel}. Give it View Channel, Send Messages and Embed Links there.`,
+        );
         return;
       }
       if (listFeeds(guild.id).length >= MAX_FEEDS_PER_SERVER) {
-        await replyNotice(interaction, "error", `A server can follow up to ${MAX_FEEDS_PER_SERVER} feeds. Remove one first.`);
+        await replyNotice(
+          interaction,
+          "error",
+          `A server can follow up to ${MAX_FEEDS_PER_SERVER} feeds. Remove one first.`,
+        );
         return;
       }
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -216,14 +260,19 @@ const feedsAdmin: AdminGroup = {
           keywords: keywordList({ keywords: interaction.options.getString("keywords") ?? "" }).join(", "),
         });
         // Don't flood the channel with old posts: only posts from now on are shared.
-        markSeen(feed.id, parsed.items.map((item) => item.key));
+        markSeen(
+          feed.id,
+          parsed.items.map((item) => item.key),
+        );
         recordCheck(feed.id, null);
         const latest = [...parsed.items].sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0))[0];
         await replyNotice(
           interaction,
           "success",
           `Following **${escapeMarkdown(feed.title)}**. New posts will appear in ${channel} (checked every 10 minutes).` +
-            (latest ? "\nHere's how posts will look:" : "\nThe feed has no posts right now, so there's nothing to preview."),
+            (latest
+              ? "\nHere's how posts will look:"
+              : "\nThe feed has no posts right now, so there's nothing to preview."),
           latest ? [itemEmbed(feed, latest)] : [],
         );
       } catch (error) {
@@ -237,7 +286,9 @@ const feedsAdmin: AdminGroup = {
       const feeds = listFeeds(guild.id);
       const list = embed()
         .setTitle(`📰 Feeds (${feeds.length})`)
-        .setDescription(truncate(feeds.map(feedLine).join("\n\n") || "No feeds yet. Add one with `/admin feeds add`.", 4096));
+        .setDescription(
+          truncate(feeds.map(feedLine).join("\n\n") || "No feeds yet. Add one with `/admin feeds add`.", 4096),
+        );
       await interaction.reply({ embeds: [list], flags: MessageFlags.Ephemeral });
       return;
     }
@@ -259,7 +310,8 @@ const feedsAdmin: AdminGroup = {
       const parsed = await fetchFeed(feed.url);
       const latest = [...parsed.items].sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0))[0];
       if (!latest) await replyNotice(interaction, "info", "That feed has no posts right now.");
-      else await replyNotice(interaction, "info", "The latest post, as Tuli would share it:", [itemEmbed(feed, latest)]);
+      else
+        await replyNotice(interaction, "info", "The latest post, as Tuli would share it:", [itemEmbed(feed, latest)]);
     } catch (error) {
       if (!(error instanceof FeedError)) throw error;
       await replyNotice(interaction, "error", error.message);
@@ -268,10 +320,15 @@ const feedsAdmin: AdminGroup = {
 
   async autocomplete(interaction) {
     const typed = interaction.options.getFocused().toLowerCase();
-    const matches = listFeeds(interaction.guildId).filter((feed) => `${feed.title} ${feed.url}`.toLowerCase().includes(typed));
+    const matches = listFeeds(interaction.guildId).filter((feed) =>
+      `${feed.title} ${feed.url}`.toLowerCase().includes(typed),
+    );
     await interaction.respond(
       matches.slice(0, 25).map((feed) => ({
-        name: truncate(`${feed.title} → #${interaction.guild.channels.cache.get(feed.channel_id)?.name ?? "deleted channel"}`, 100),
+        name: truncate(
+          `${feed.title} → #${interaction.guild.channels.cache.get(feed.channel_id)?.name ?? "deleted channel"}`,
+          100,
+        ),
         value: String(feed.id),
       })),
     );
@@ -286,7 +343,9 @@ export const feedsFeature: Feature = {
   describeSettings(guild) {
     const feeds = listFeeds(guild.id);
     const broken = feeds.filter((feed) => feed.last_error);
-    const lines = [feeds.length ? `Following ${plural(feeds.length, "feed")}` : "None yet. Add one with `/admin feeds add`."];
+    const lines = [
+      feeds.length ? `Following ${plural(feeds.length, "feed")}` : "None yet. Add one with `/admin feeds add`.",
+    ];
     for (const feed of broken) lines.push(`⚠️ **${escapeMarkdown(feed.title)}**: ${feed.last_error}`);
     return [{ name: "📰 Feeds", value: truncate(lines.join("\n"), 1024) }];
   },

@@ -30,7 +30,12 @@ const IMPERSONATED = ["discord", "discordapp", "discordnitro", "steamcommunity",
 const URL_PATTERN = /\bhttps?:\/\/([^\s/?#<>]+)/gi;
 
 export function linkDomains(content: string): string[] {
-  return [...content.matchAll(URL_PATTERN)].map((match) => (match[1] ?? "").toLowerCase().replace(/:\d+$/, "").replace(/^www\./, ""));
+  return [...content.matchAll(URL_PATTERN)].map((match) =>
+    (match[1] ?? "")
+      .toLowerCase()
+      .replace(/:\d+$/, "")
+      .replace(/^www\./, ""),
+  );
 }
 
 function isOfficial(host: string): boolean {
@@ -39,7 +44,14 @@ function isOfficial(host: string): boolean {
 
 /** Undoes common letter swaps: "dlsc0rd" → "discord", "stearncommunity" → "steamcommunity". */
 function unLeet(text: string): string {
-  return text.replace(/rn/g, "m").replace(/vv/g, "w").replace(/0/g, "o").replace(/[1l|]/g, "i").replace(/3/g, "e").replace(/5/g, "s").replace(/[^a-z]/g, "");
+  return text
+    .replace(/rn/g, "m")
+    .replace(/vv/g, "w")
+    .replace(/0/g, "o")
+    .replace(/[1l|]/g, "i")
+    .replace(/3/g, "e")
+    .replace(/5/g, "s")
+    .replace(/[^a-z]/g, "");
 }
 
 function editDistance(a: string, b: string): number {
@@ -67,7 +79,8 @@ export function isLookalikeDomain(host: string): boolean {
   });
 }
 
-const GIFT_BAIT = /\b(free|gift|claim|giveaway|airdrop)\b[\s\S]{0,40}\b(nitro|steam)\b|\b(nitro|steam)\b[\s\S]{0,40}\b(free|gift|claim|giveaway|airdrop)\b/i;
+const GIFT_BAIT =
+  /\b(free|gift|claim|giveaway|airdrop)\b[\s\S]{0,40}\b(nitro|steam)\b|\b(nitro|steam)\b[\s\S]{0,40}\b(free|gift|claim|giveaway|airdrop)\b/i;
 const MASS_PING = /@(everyone|here)\b/;
 const GIVEAWAY_BAIT =
   /\b(giving away|give away|giveaway|selling|for free)\b[^\n]{0,80}\b(mac ?book|laptop|i ?pad|iphone|ps5|playstation|xbox|nintendo switch|airpods|tickets?|gpu|graphics card|monitor|camera)\b/i;
@@ -87,11 +100,15 @@ export function checkMessage({ content, canMentionEveryone }: MessageFacts): Ver
   const fakes = [...new Set(domains.filter(isLookalikeDomain))];
   if (fakes.length) block.push(`Links to a fake Discord/Steam site (${fakes.join(", ")})`);
   if (domains.length && GIFT_BAIT.test(content)) block.push("Free Nitro/Steam gift bait with a link");
-  if (domains.length && !canMentionEveryone && MASS_PING.test(content)) block.push("Tried to ping @everyone with a link");
+  if (domains.length && !canMentionEveryone && MASS_PING.test(content))
+    block.push("Tried to ping @everyone with a link");
   if (block.length) return { action: "block", reasons: block };
 
   if (GIVEAWAY_BAIT.test(content) && CONTACT_ME.test(content)) {
-    return { action: "flag", reasons: ['Looks like a "giving away my ..., DM me" scam, often posted by hacked accounts'] };
+    return {
+      action: "flag",
+      reasons: ['Looks like a "giving away my ..., DM me" scam, often posted by hacked accounts'],
+    };
   }
   return null;
 }
@@ -124,7 +141,10 @@ export class RepeatTracker {
 
     const copies = fresh.filter((m) => m.key === message.key);
     if (new Set(copies.map((m) => m.channelId)).size < this.channelLimit) return null;
-    this.recent.set(who, fresh.filter((m) => m.key !== message.key)); // report each burst once
+    this.recent.set(
+      who,
+      fresh.filter((m) => m.key !== message.key),
+    ); // report each burst once
     return copies;
   }
 

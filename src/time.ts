@@ -13,7 +13,12 @@ export function isValidTimezone(timezone: string): boolean {
 
 /** Today's date in a timezone as YYYY-MM-DD, e.g. for "once per day" limits. */
 export function localDate(timezone: string, at = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(at);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(at);
 }
 
 /** previousDate("2026-03-01") → "2026-02-28". Pure calendar math, so DST can't skew it. */

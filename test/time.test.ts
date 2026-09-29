@@ -16,10 +16,19 @@ test("previousDate handles month, year and leap-day boundaries", () => {
 
 test("nextOccurrence follows the timezone across daylight saving changes", () => {
   // 9 AM Chicago is 14:00 UTC in summer (CDT) and 15:00 UTC in winter (CST).
-  assert.equal(nextOccurrence("0 9 * * *", "America/Chicago", new Date("2026-09-29T20:00:00Z")).toISOString(), "2026-09-30T14:00:00.000Z");
-  assert.equal(nextOccurrence("0 9 * * *", "America/Chicago", new Date("2026-11-02T00:00:00Z")).toISOString(), "2026-11-02T15:00:00.000Z");
+  assert.equal(
+    nextOccurrence("0 9 * * *", "America/Chicago", new Date("2026-09-29T20:00:00Z")).toISOString(),
+    "2026-09-30T14:00:00.000Z",
+  );
+  assert.equal(
+    nextOccurrence("0 9 * * *", "America/Chicago", new Date("2026-11-02T00:00:00Z")).toISOString(),
+    "2026-11-02T15:00:00.000Z",
+  );
   // Weekly: Fridays at 6 PM
-  assert.equal(nextOccurrence("0 18 * * 5", "America/Chicago", new Date("2026-09-29T00:00:00Z")).toISOString(), "2026-10-02T23:00:00.000Z");
+  assert.equal(
+    nextOccurrence("0 18 * * 5", "America/Chicago", new Date("2026-09-29T00:00:00Z")).toISOString(),
+    "2026-10-02T23:00:00.000Z",
+  );
 });
 
 test("hourLabel and isValidTimezone", () => {

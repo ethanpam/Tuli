@@ -33,7 +33,9 @@ interface MemberPoints {
 const selectPoints = db.prepare(
   "SELECT points, daily_streak, last_daily FROM members WHERE guild_id = $guildId AND user_id = $userId",
 );
-const updatePoints = db.prepare("UPDATE members SET points = points + $amount WHERE guild_id = $guildId AND user_id = $userId");
+const updatePoints = db.prepare(
+  "UPDATE members SET points = points + $amount WHERE guild_id = $guildId AND user_id = $userId",
+);
 const insertTransaction = db.prepare(`
   INSERT INTO point_transactions (guild_id, user_id, amount, reason, actor_id, created_at)
   VALUES ($guildId, $userId, $amount, $reason, $actorId, $now)`);
@@ -52,7 +54,13 @@ const selectPosition = db.prepare(`
   WHERE guild_id = $guildId AND (points > $points OR (points = $points AND user_id < $userId))`);
 
 function memberPoints(guildId: string, userId: string): MemberPoints {
-  return (selectPoints.get({ guildId, userId }) as MemberPoints | undefined) ?? { points: 0, daily_streak: 0, last_daily: null };
+  return (
+    (selectPoints.get({ guildId, userId }) as MemberPoints | undefined) ?? {
+      points: 0,
+      daily_streak: 0,
+      last_daily: null,
+    }
+  );
 }
 
 export function getBalance(guildId: string, userId: string): number {
@@ -98,20 +106,39 @@ export interface Party {
 export function transferPoints(guildId: string, from: Party, to: Party, amount: number, note?: string) {
   const suffix = note ? `: ${note}` : "";
   return transaction(() => ({
-    fromBalance: changePoints({ guildId, userId: from.id, amount: -amount, reason: `Sent to ${to.name}${suffix}`, actorId: from.id, displayName: from.name }),
-    toBalance: changePoints({ guildId, userId: to.id, amount, reason: `From ${from.name}${suffix}`, actorId: from.id, displayName: to.name }),
+    fromBalance: changePoints({
+      guildId,
+      userId: from.id,
+      amount: -amount,
+      reason: `Sent to ${to.name}${suffix}`,
+      actorId: from.id,
+      displayName: from.name,
+    }),
+    toBalance: changePoints({
+      guildId,
+      userId: to.id,
+      amount,
+      reason: `From ${from.name}${suffix}`,
+      actorId: from.id,
+      displayName: to.name,
+    }),
   }));
 }
 
 export type DailyResult =
-  | { claimed: true; amount: number; streak: number; balance: number }
-  | { claimed: false; streak: number };
+  { claimed: true; amount: number; streak: number; balance: number } | { claimed: false; streak: number };
 
 /**
  * Claims today's reward. Claiming on consecutive days (in the server's timezone) builds a
  * streak that raises the reward; missing a day starts over.
  */
-export function claimDaily(guildId: string, userId: string, displayName: string, today: string, yesterday: string): DailyResult {
+export function claimDaily(
+  guildId: string,
+  userId: string,
+  displayName: string,
+  today: string,
+  yesterday: string,
+): DailyResult {
   return transaction(() => {
     ensureMember(guildId, userId, displayName);
     const member = memberPoints(guildId, userId);
@@ -120,7 +147,12 @@ export function claimDaily(guildId: string, userId: string, displayName: string,
     const streak = member.last_daily === yesterday ? member.daily_streak + 1 : 1;
     const amount = dailyAmount(streak);
     updateDaily.run({ guildId, userId, streak, today });
-    const balance = changePoints({ guildId, userId, amount, reason: streak > 1 ? `Daily reward (${streak}-day streak)` : "Daily reward" });
+    const balance = changePoints({
+      guildId,
+      userId,
+      amount,
+      reason: streak > 1 ? `Daily reward (${streak}-day streak)` : "Daily reward",
+    });
     return { claimed: true, amount, streak, balance };
   });
 }
@@ -140,7 +172,11 @@ export function recentTransactions(guildId: string, userId: string, limit: numbe
 }
 
 export function topByPoints(guildId: string, limit: number, offset: number) {
-  return selectTop.all({ guildId, limit, offset }) as { user_id: string; display_name: string | null; points: number }[];
+  return selectTop.all({ guildId, limit, offset }) as {
+    user_id: string;
+    display_name: string | null;
+    points: number;
+  }[];
 }
 
 export function countWithPoints(guildId: string): number {

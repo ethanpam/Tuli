@@ -41,8 +41,19 @@ function attribute(value: unknown, name: string): string {
 }
 
 const ENTITIES: Record<string, string> = {
-  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", hellip: "…",
-  rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", ndash: "–", mdash: "—",
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+  hellip: "…",
+  rsquo: "’",
+  lsquo: "‘",
+  rdquo: "”",
+  ldquo: "“",
+  ndash: "–",
+  mdash: "—",
 };
 
 function decodeEntities(value: string): string {
@@ -84,7 +95,9 @@ function dateOf(...values: unknown[]): number | null {
 function mediaImage(node: Node): string | null {
   const candidates = [
     ...((node["enclosure"] as unknown[]) ?? []).filter((e) => attribute(e, "type").startsWith("image/")),
-    ...((node["media:content"] as unknown[]) ?? []).filter((m) => attribute(m, "medium") === "image" || attribute(m, "type").startsWith("image/")),
+    ...((node["media:content"] as unknown[]) ?? []).filter(
+      (m) => attribute(m, "medium") === "image" || attribute(m, "type").startsWith("image/"),
+    ),
     ...((node["media:thumbnail"] as unknown[]) ?? []),
   ];
   return candidates.map((c) => attribute(c, "url")).find(Boolean) ?? null;
@@ -142,5 +155,7 @@ export function parseFeed(xml: string): ParsedFeed {
     const rdfChannel = rdf["channel"] as Node | undefined;
     return { title: text(rdfChannel?.["title"]) || "RSS feed", items: ((rdf["item"] as Node[]) ?? []).map(rssItem) };
   }
-  throw new FeedError("That page isn't an RSS or Atom feed. Look for an RSS link on the site (often /feed/ or /rss.xml).");
+  throw new FeedError(
+    "That page isn't an RSS or Atom feed. Look for an RSS link on the site (often /feed/ or /rss.xml).",
+  );
 }

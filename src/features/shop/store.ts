@@ -37,8 +37,12 @@ const updateItemRow = db.prepare(`
   WHERE guild_id = $guildId AND id = $id RETURNING *`);
 const deleteItem = db.prepare("DELETE FROM shop_items WHERE guild_id = $guildId AND id = $id");
 const selectItem = db.prepare("SELECT * FROM shop_items WHERE guild_id = $guildId AND id = $id");
-const selectItemByName = db.prepare("SELECT * FROM shop_items WHERE guild_id = $guildId AND name = $name COLLATE NOCASE");
-const selectItems = db.prepare("SELECT * FROM shop_items WHERE guild_id = $guildId ORDER BY price, name LIMIT $limit OFFSET $offset");
+const selectItemByName = db.prepare(
+  "SELECT * FROM shop_items WHERE guild_id = $guildId AND name = $name COLLATE NOCASE",
+);
+const selectItems = db.prepare(
+  "SELECT * FROM shop_items WHERE guild_id = $guildId ORDER BY price, name LIMIT $limit OFFSET $offset",
+);
 const selectItemCount = db.prepare("SELECT COUNT(*) AS count FROM shop_items WHERE guild_id = $guildId");
 const searchItemRows = db.prepare(
   "SELECT * FROM shop_items WHERE guild_id = $guildId AND name LIKE $pattern ESCAPE '\\' ORDER BY name LIMIT $limit",
@@ -59,7 +63,9 @@ const selectMemberOrders = db.prepare(
 const selectPendingOrders = db.prepare(
   "SELECT * FROM shop_orders WHERE guild_id = $guildId AND status = 'pending' ORDER BY id LIMIT $limit",
 );
-const selectPendingCount = db.prepare("SELECT COUNT(*) AS count FROM shop_orders WHERE guild_id = $guildId AND status = 'pending'");
+const selectPendingCount = db.prepare(
+  "SELECT COUNT(*) AS count FROM shop_orders WHERE guild_id = $guildId AND status = 'pending'",
+);
 
 export interface ItemFields {
   name: string;
@@ -169,7 +175,13 @@ export function refundOrder(guildId: string, id: number, handledBy: string): Ord
   return transaction(() => {
     const order = getOrder(guildId, id);
     if (!order || order.status === "refunded") return undefined;
-    changePoints({ guildId, userId: order.user_id, amount: order.price, reason: `Refund: ${order.item_name}`, actorId: handledBy });
+    changePoints({
+      guildId,
+      userId: order.user_id,
+      amount: order.price,
+      reason: `Refund: ${order.item_name}`,
+      actorId: handledBy,
+    });
     if (order.item_id !== null) incrementStock.run({ id: order.item_id });
     return finishOrder.get({ guildId, id, status: "refunded", handledBy, now: Date.now() }) as unknown as Order;
   });

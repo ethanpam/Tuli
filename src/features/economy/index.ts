@@ -43,7 +43,10 @@ function dailyWindow(guildId: string) {
 }
 
 /** Rejects bots, which can't hold points. Returns true if the target is fine. */
-async function checkNotBot(interaction: ChatInputCommandInteraction<"cached">, target: { bot: boolean }): Promise<boolean> {
+async function checkNotBot(
+  interaction: ChatInputCommandInteraction<"cached">,
+  target: { bot: boolean },
+): Promise<boolean> {
   if (!target.bot) return true;
   await replyNotice(interaction, "error", "Bots don't have points.");
   return false;
@@ -64,14 +67,21 @@ const pointsCommand: SlashCommand = {
         .setDescription("See how many points you (or someone else) have")
         .addUserOption((o) => o.setName("member").setDescription("Whose balance to check (default: yours)")),
     )
-    .addSubcommand((sub) => sub.setName("daily").setDescription("Claim your daily points. Come back every day to build a streak"))
+    .addSubcommand((sub) =>
+      sub.setName("daily").setDescription("Claim your daily points. Come back every day to build a streak"),
+    )
     .addSubcommand((sub) =>
       sub
         .setName("pay")
         .setDescription("Send some of your points to someone")
         .addUserOption((o) => o.setName("member").setDescription("Who to send points to").setRequired(true))
         .addIntegerOption((o) =>
-          o.setName("amount").setDescription("How many points").setRequired(true).setMinValue(1).setMaxValue(MAX_AMOUNT),
+          o
+            .setName("amount")
+            .setDescription("How many points")
+            .setRequired(true)
+            .setMinValue(1)
+            .setMaxValue(MAX_AMOUNT),
         )
         .addStringOption((o) => o.setName("note").setDescription("What it's for").setMaxLength(100)),
     )
@@ -84,7 +94,8 @@ const pointsCommand: SlashCommand = {
       case "balance": {
         const user = interaction.options.getUser("member") ?? interaction.user;
         if (!(await checkNotBot(interaction, user))) return;
-        const member: GuildMember | null = interaction.options.getMember("member") ?? (user.id === interaction.user.id ? interaction.member : null);
+        const member: GuildMember | null =
+          interaction.options.getMember("member") ?? (user.id === interaction.user.id ? interaction.member : null);
         const name = member?.displayName ?? user.displayName;
         const balance = getBalance(guildId, user.id);
         const { today, yesterday, resetsAt } = dailyWindow(guildId);
@@ -96,7 +107,10 @@ const pointsCommand: SlashCommand = {
           .addFields(
             {
               name: "Rank",
-              value: balance > 0 ? `#${pointsPosition(guildId, user.id)} of ${formatNumber(countWithPoints(guildId))}` : "Unranked",
+              value:
+                balance > 0
+                  ? `#${pointsPosition(guildId, user.id)} of ${formatNumber(countWithPoints(guildId))}`
+                  : "Unranked",
               inline: true,
             },
             { name: "Daily streak", value: streak ? `🔥 ${plural(streak, "day")}` : "None yet", inline: true },
@@ -127,7 +141,10 @@ const pointsCommand: SlashCommand = {
           );
           return;
         }
-        const streakLine = result.streak > 1 ? `🔥 **${result.streak}-day streak!**` : "🔥 Streak started. Come back tomorrow to keep it going.";
+        const streakLine =
+          result.streak > 1
+            ? `🔥 **${result.streak}-day streak!**`
+            : "🔥 Streak started. Come back tomorrow to keep it going.";
         const reward = embed(Colors.gold)
           .setTitle("🎁 Daily reward")
           .setDescription(
@@ -163,7 +180,11 @@ const pointsCommand: SlashCommand = {
                 (note ? `\n> ${escapeMarkdown(note)}` : ""),
             )
             .setFooter({ text: `${interaction.member.displayName} has ${formatNumber(fromBalance)} points left` });
-          await interaction.reply({ content: `${recipient}`, embeds: [receipt], allowedMentions: { users: [recipient.id] } });
+          await interaction.reply({
+            content: `${recipient}`,
+            embeds: [receipt],
+            allowedMentions: { users: [recipient.id] },
+          });
         } catch (error) {
           if (!(error instanceof NotEnoughPointsError)) throw error;
           await replyNotice(interaction, "error", `You only have ${formatPoints(error.balance)}.`);
@@ -174,7 +195,8 @@ const pointsCommand: SlashCommand = {
       case "history": {
         const transactions = recentTransactions(guildId, interaction.user.id, HISTORY_LENGTH);
         const lines = transactions.map(
-          (entry) => `\`${signed(entry.amount).padStart(7)}\` ${escapeMarkdown(entry.reason)} · ${time(Math.floor(entry.created_at / 1000), TimestampStyles.RelativeTime)}`,
+          (entry) =>
+            `\`${signed(entry.amount).padStart(7)}\` ${escapeMarkdown(entry.reason)} · ${time(Math.floor(entry.created_at / 1000), TimestampStyles.RelativeTime)}`,
         );
         const history = embed(Colors.gold)
           .setTitle("🧾 Your points history")
@@ -201,7 +223,12 @@ const pointsAdmin: AdminGroup = {
           .setDescription("Give someone points, e.g. for coming to a meeting")
           .addUserOption((o) => o.setName("member").setDescription("Who gets the points").setRequired(true))
           .addIntegerOption((o) =>
-            o.setName("amount").setDescription("How many points").setRequired(true).setMinValue(1).setMaxValue(MAX_AMOUNT),
+            o
+              .setName("amount")
+              .setDescription("How many points")
+              .setRequired(true)
+              .setMinValue(1)
+              .setMaxValue(MAX_AMOUNT),
           )
           .addStringOption((o) =>
             o.setName("reason").setDescription("Shown to them in their history").setRequired(true).setMaxLength(100),
@@ -213,7 +240,12 @@ const pointsAdmin: AdminGroup = {
           .setDescription("Take points away from someone")
           .addUserOption((o) => o.setName("member").setDescription("Who loses the points").setRequired(true))
           .addIntegerOption((o) =>
-            o.setName("amount").setDescription("How many points").setRequired(true).setMinValue(1).setMaxValue(MAX_AMOUNT),
+            o
+              .setName("amount")
+              .setDescription("How many points")
+              .setRequired(true)
+              .setMinValue(1)
+              .setMaxValue(MAX_AMOUNT),
           )
           .addStringOption((o) =>
             o.setName("reason").setDescription("Shown to them in their history").setRequired(true).setMaxLength(100),
@@ -237,13 +269,25 @@ const pointsAdmin: AdminGroup = {
     switch (interaction.options.getSubcommand()) {
       case "give": {
         const amount = interaction.options.getInteger("amount", true);
-        const balance = changePoints({ guildId, userId: user.id, amount, reason, actorId: interaction.user.id, displayName: name });
+        const balance = changePoints({
+          guildId,
+          userId: user.id,
+          amount,
+          reason,
+          actorId: interaction.user.id,
+          displayName: name,
+        });
         const announcement = embed(Colors.gold).setDescription(
           `🎉 **${escapeMarkdown(name)}** received **${formatPoints(amount)}**\n> ${escapeMarkdown(reason)}`,
         );
         await interaction.reply({ content: `${user}`, embeds: [announcement], allowedMentions: { users: [user.id] } });
         await sendStaffLog(interaction.guild, {
-          embeds: [notice("info", `**${escapeMarkdown(staffName)}** gave ${user} ${formatPoints(amount)} (now ${formatNumber(balance)}): ${escapeMarkdown(reason)}`)],
+          embeds: [
+            notice(
+              "info",
+              `**${escapeMarkdown(staffName)}** gave ${user} ${formatPoints(amount)} (now ${formatNumber(balance)}): ${escapeMarkdown(reason)}`,
+            ),
+          ],
         });
         return;
       }
@@ -255,10 +299,26 @@ const pointsAdmin: AdminGroup = {
           await replyNotice(interaction, "info", `${escapeMarkdown(name)} has no points to take.`);
           return;
         }
-        const balance = changePoints({ guildId, userId: user.id, amount: -amount, reason, actorId: interaction.user.id, displayName: name });
-        await replyNotice(interaction, "success", `Took ${formatPoints(amount)} from ${user}. They now have ${formatPoints(balance)}.`);
+        const balance = changePoints({
+          guildId,
+          userId: user.id,
+          amount: -amount,
+          reason,
+          actorId: interaction.user.id,
+          displayName: name,
+        });
+        await replyNotice(
+          interaction,
+          "success",
+          `Took ${formatPoints(amount)} from ${user}. They now have ${formatPoints(balance)}.`,
+        );
         await sendStaffLog(interaction.guild, {
-          embeds: [notice("warning", `**${escapeMarkdown(staffName)}** took ${formatPoints(amount)} from ${user} (now ${formatNumber(balance)}): ${escapeMarkdown(reason)}`)],
+          embeds: [
+            notice(
+              "warning",
+              `**${escapeMarkdown(staffName)}** took ${formatPoints(amount)} from ${user} (now ${formatNumber(balance)}): ${escapeMarkdown(reason)}`,
+            ),
+          ],
         });
         return;
       }
@@ -270,7 +330,9 @@ const pointsAdmin: AdminGroup = {
         });
         const history = embed(Colors.gold)
           .setTitle(`🧾 ${name}'s points history`)
-          .setDescription(`Balance: **${formatPoints(getBalance(guildId, user.id))}**\n\n${lines.join("\n") || "No points activity yet."}`);
+          .setDescription(
+            `Balance: **${formatPoints(getBalance(guildId, user.id))}**\n\n${lines.join("\n") || "No points activity yet."}`,
+          );
         await interaction.reply({ embeds: [history], flags: MessageFlags.Ephemeral });
         return;
       }
@@ -284,7 +346,11 @@ export const pointsBoard: Board = {
   emoji: "🪙",
   count: countWithPoints,
   rows: (guildId, limit, offset) =>
-    topByPoints(guildId, limit, offset).map((row) => ({ userId: row.user_id, name: row.display_name, value: formatPoints(row.points) })),
+    topByPoints(guildId, limit, offset).map((row) => ({
+      userId: row.user_id,
+      name: row.display_name,
+      value: formatPoints(row.points),
+    })),
 };
 
 export const economyFeature: Feature = {

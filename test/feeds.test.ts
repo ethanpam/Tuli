@@ -75,7 +75,10 @@ test("parses Atom and RSS 1.0", () => {
   assert.equal(release?.summary, "Bug fixes\nFaster");
   assert.equal(release?.publishedAt, Date.parse("2026-07-19T15:59:47Z"));
   const old = parseFeed(rdf);
-  assert.deepEqual([old.title, old.items[0]?.title, old.items[0]?.publishedAt], ["Old school", "Hello", Date.parse("2026-01-02T03:04:05Z")]);
+  assert.deepEqual(
+    [old.title, old.items[0]?.title, old.items[0]?.publishedAt],
+    ["Old school", "Hello", Date.parse("2026-01-02T03:04:05Z")],
+  );
 });
 
 test("rejects things that aren't feeds", () => {
@@ -88,14 +91,24 @@ test("htmlToText decodes entities", () => {
 });
 
 test("only public http(s) feeds are allowed", async () => {
-  for (const url of ["http://localhost/feed", "http://127.0.0.1/rss", "http://192.168.1.5/rss", "http://169.254.169.254/latest", "ftp://example.com/feed", "not a url"]) {
+  for (const url of [
+    "http://localhost/feed",
+    "http://127.0.0.1/rss",
+    "http://192.168.1.5/rss",
+    "http://169.254.169.254/latest",
+    "ftp://example.com/feed",
+    "not a url",
+  ]) {
     await assert.rejects(fetchFeed(url), FeedError, url);
   }
 });
 
 test("remembers which posts were shared, per feed", () => {
   const feed = addFeed("f1", { channelId: "c", url: "https://example.com/rss", title: "Example", keywords: "" });
-  assert.throws(() => addFeed("f1", { channelId: "c", url: "https://example.com/rss", title: "Again", keywords: "" }), FeedError);
+  assert.throws(
+    () => addFeed("f1", { channelId: "c", url: "https://example.com/rss", title: "Again", keywords: "" }),
+    FeedError,
+  );
   markSeen(feed.id, ["a", "b"]);
   assert.deepEqual(unseen(feed.id, ["a", "b", "c"]), ["c"]);
   removeFeed("f1", feed.id);

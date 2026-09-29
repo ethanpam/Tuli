@@ -52,7 +52,11 @@ function memberFields(member: GuildMember) {
   return [
     { name: "Member", value: `${member}\n${escapeMarkdown(member.user.username)} · \`${member.id}\``, inline: true },
     { name: "Account created", value: time(member.user.createdAt, TimestampStyles.RelativeTime), inline: true },
-    { name: "Joined", value: member.joinedAt ? time(member.joinedAt, TimestampStyles.RelativeTime) : "Unknown", inline: true },
+    {
+      name: "Joined",
+      value: member.joinedAt ? time(member.joinedAt, TimestampStyles.RelativeTime) : "Unknown",
+      inline: true,
+    },
   ];
 }
 
@@ -81,7 +85,12 @@ async function warnHackedAccount(member: GuildMember, minutes: number, timedOut:
 }
 
 /** Deletes every copy of a scam, times the sender out, and reports it to staff. */
-async function blockScam(message: Message<true>, member: GuildMember, reasons: string[], copies: { channelId: string; messageId: string }[]) {
+async function blockScam(
+  message: Message<true>,
+  member: GuildMember,
+  reasons: string[],
+  copies: { channelId: string; messageId: string }[],
+) {
   const { guild } = message;
   let deleted = 0;
   for (const copy of new Map(copies.map((c) => [c.messageId, c])).values()) {
@@ -97,7 +106,14 @@ async function blockScam(message: Message<true>, member: GuildMember, reasons: s
   await warnHackedAccount(member, minutes, timedOut);
 
   const channels = [...new Set(copies.map((c) => `<#${c.channelId}>`))].join(" ");
-  const done = [`Deleted ${plural(deleted, "message")}`, timedOut ? `timed out for ${durationLabel(minutes)}` : minutes ? "couldn't time out (Tuli's role may be too low)" : ""];
+  const done = [
+    `Deleted ${plural(deleted, "message")}`,
+    timedOut
+      ? `timed out for ${durationLabel(minutes)}`
+      : minutes
+        ? "couldn't time out (Tuli's role may be too low)"
+        : "",
+  ];
   const report = embed(Colors.danger)
     .setTitle("🚨 Blocked a likely scam")
     .setThumbnail(member.displayAvatarURL())
@@ -112,7 +128,13 @@ async function blockScam(message: Message<true>, member: GuildMember, reasons: s
   const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId(`mod:ban:${member.id}`).setLabel("Ban").setStyle(ButtonStyle.Danger),
   );
-  if (timedOut) buttons.addComponents(new ButtonBuilder().setCustomId(`mod:untimeout:${member.id}`).setLabel("Remove timeout").setStyle(ButtonStyle.Secondary));
+  if (timedOut)
+    buttons.addComponents(
+      new ButtonBuilder()
+        .setCustomId(`mod:untimeout:${member.id}`)
+        .setLabel("Remove timeout")
+        .setStyle(ButtonStyle.Secondary),
+    );
   await sendStaffLog(guild, { embeds: [report], components: [buttons] });
 }
 
@@ -128,18 +150,31 @@ async function flagForReview(message: Message<true>, member: GuildMember, reason
     )
     .setTimestamp();
   const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId(`mod:punish:${member.id}:${message.channelId}:${message.id}`).setLabel("Delete & time out").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId(`mod:punish:${member.id}:${message.channelId}:${message.id}`)
+      .setLabel("Delete & time out")
+      .setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId("mod:dismiss").setLabel("Looks fine").setStyle(ButtonStyle.Secondary),
   );
   await sendStaffLog(message.guild, { embeds: [report], components: [buttons] });
 }
 
 /** Adds a "Handled" line to a report and removes its buttons. */
-async function closeReport(interaction: MessageComponentInteraction<"cached">, outcome: string, messageId = interaction.message.id) {
-  const message = messageId === interaction.message.id ? interaction.message : await interaction.channel?.messages.fetch(messageId).catch(() => null);
+async function closeReport(
+  interaction: MessageComponentInteraction<"cached">,
+  outcome: string,
+  messageId = interaction.message.id,
+) {
+  const message =
+    messageId === interaction.message.id
+      ? interaction.message
+      : await interaction.channel?.messages.fetch(messageId).catch(() => null);
   const [original] = message?.embeds ?? [];
   if (!message || !original) return;
-  const updated = EmbedBuilder.from(original).addFields({ name: "Handled", value: `${outcome} by ${interaction.user}` });
+  const updated = EmbedBuilder.from(original).addFields({
+    name: "Handled",
+    value: `${outcome} by ${interaction.user}`,
+  });
   if (messageId === interaction.message.id) await interaction.update({ embeds: [updated], components: [] });
   else await message.edit({ embeds: [updated], components: [] });
 }
@@ -166,7 +201,10 @@ const reportButtons: ComponentHandler = {
       case "ban": {
         // Ask first, so a misclick can't ban anyone.
         const confirm = new ActionRowBuilder<ButtonBuilder>().addComponents(
-          new ButtonBuilder().setCustomId(`mod:ban-confirm:${userId}:${interaction.message.id}`).setLabel("Yes, ban them").setStyle(ButtonStyle.Danger),
+          new ButtonBuilder()
+            .setCustomId(`mod:ban-confirm:${userId}:${interaction.message.id}`)
+            .setLabel("Yes, ban them")
+            .setStyle(ButtonStyle.Danger),
         );
         await interaction.reply({
           embeds: [notice("warning", `Ban <@${userId}> and delete their messages from the last day?`)],
@@ -178,10 +216,19 @@ const reportButtons: ComponentHandler = {
       case "ban-confirm": {
         const [reportId] = rest;
         const banned = await guild.members
-          .ban(userId, { deleteMessageSeconds: 24 * 60 * 60, reason: `Scam, banned by ${interaction.user.username} via Tuli` })
-          .then(() => true, () => false);
+          .ban(userId, {
+            deleteMessageSeconds: 24 * 60 * 60,
+            reason: `Scam, banned by ${interaction.user.username} via Tuli`,
+          })
+          .then(
+            () => true,
+            () => false,
+          );
         if (!banned) {
-          await interaction.update({ embeds: [notice("error", "Discord wouldn't let Tuli ban them. Tuli's role may be below theirs.")], components: [] });
+          await interaction.update({
+            embeds: [notice("error", "Discord wouldn't let Tuli ban them. Tuli's role may be below theirs.")],
+            components: [],
+          });
           return;
         }
         await interaction.update({ embeds: [notice("success", `Banned <@${userId}>.`)], components: [] });
@@ -200,9 +247,14 @@ const reportButtons: ComponentHandler = {
         if (channel?.isTextBased()) await channel.messages.delete(messageId).catch(() => {});
         const member = await guild.members.fetch(userId).catch(() => null);
         const minutes = timeoutMinutes(guild.id) || 60;
-        const timedOut = member ? await timeOut(member, minutes, `Scam, confirmed by ${interaction.user.username}`) : false;
+        const timedOut = member
+          ? await timeOut(member, minutes, `Scam, confirmed by ${interaction.user.username}`)
+          : false;
         if (member) await warnHackedAccount(member, minutes, timedOut);
-        await closeReport(interaction, timedOut ? `🗑️ Deleted and timed out for ${durationLabel(minutes)}` : "🗑️ Deleted");
+        await closeReport(
+          interaction,
+          timedOut ? `🗑️ Deleted and timed out for ${durationLabel(minutes)}` : "🗑️ Deleted",
+        );
         return;
       }
       case "dismiss": {
@@ -236,13 +288,17 @@ const modCommand: SlashCommand = {
       sub
         .setName("unwarn")
         .setDescription("Remove a warning")
-        .addIntegerOption((o) => o.setName("id").setDescription("The warning ID from /mod warnings").setRequired(true).setMinValue(1)),
+        .addIntegerOption((o) =>
+          o.setName("id").setDescription("The warning ID from /mod warnings").setRequired(true).setMinValue(1),
+        ),
     )
     .addSubcommand((sub) =>
       sub
         .setName("purge")
         .setDescription("Delete recent messages in this channel")
-        .addIntegerOption((o) => o.setName("amount").setDescription("How many (up to 100)").setRequired(true).setMinValue(1).setMaxValue(100))
+        .addIntegerOption((o) =>
+          o.setName("amount").setDescription("How many (up to 100)").setRequired(true).setMinValue(1).setMaxValue(100),
+        )
         .addUserOption((o) => o.setName("member").setDescription("Only delete this person's messages")),
     ),
 
@@ -261,10 +317,23 @@ const modCommand: SlashCommand = {
         addWarning(guild.id, user.id, interaction.user.id, reason);
         const count = listWarnings(guild.id, user.id).length;
         const dm = await user
-          .send({ embeds: [notice("warning", `You were warned in **${escapeMarkdown(guild.name)}**: ${escapeMarkdown(reason)}`)] })
-          .then(() => true, () => false);
-        await replyNotice(interaction, "success", `Warned ${user} (warning #${count}).${dm ? "" : " They have DMs off, so they weren't told."}`);
-        await sendStaffLog(guild, { embeds: [notice("warning", `**${moderator}** warned ${user} (warning #${count}): ${escapeMarkdown(reason)}`)] });
+          .send({
+            embeds: [
+              notice("warning", `You were warned in **${escapeMarkdown(guild.name)}**: ${escapeMarkdown(reason)}`),
+            ],
+          })
+          .then(
+            () => true,
+            () => false,
+          );
+        await replyNotice(
+          interaction,
+          "success",
+          `Warned ${user} (warning #${count}).${dm ? "" : " They have DMs off, so they weren't told."}`,
+        );
+        await sendStaffLog(guild, {
+          embeds: [notice("warning", `**${moderator}** warned ${user} (warning #${count}): ${escapeMarkdown(reason)}`)],
+        });
         return;
       }
 
@@ -288,8 +357,19 @@ const modCommand: SlashCommand = {
           await replyNotice(interaction, "error", "There's no warning with that ID.");
           return;
         }
-        await replyNotice(interaction, "success", `Removed a warning from <@${warning.user_id}>: ${escapeMarkdown(warning.reason)}`);
-        await sendStaffLog(guild, { embeds: [notice("info", `**${moderator}** removed a warning from <@${warning.user_id}>: ${escapeMarkdown(warning.reason)}`)] });
+        await replyNotice(
+          interaction,
+          "success",
+          `Removed a warning from <@${warning.user_id}>: ${escapeMarkdown(warning.reason)}`,
+        );
+        await sendStaffLog(guild, {
+          embeds: [
+            notice(
+              "info",
+              `**${moderator}** removed a warning from <@${warning.user_id}>: ${escapeMarkdown(warning.reason)}`,
+            ),
+          ],
+        });
         return;
       }
 
@@ -303,7 +383,10 @@ const modCommand: SlashCommand = {
         const target = interaction.options.getUser("member");
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const recent = await channel.messages.fetch({ limit: 100 });
-        const toDelete = [...recent.filter((message) => !target || message.author.id === target.id).values()].slice(0, amount);
+        const toDelete = [...recent.filter((message) => !target || message.author.id === target.id).values()].slice(
+          0,
+          amount,
+        );
         // Discord only bulk-deletes messages younger than two weeks.
         const deleted = await channel.bulkDelete(toDelete, true).then(
           (removed) => removed.size,
@@ -315,7 +398,15 @@ const modCommand: SlashCommand = {
           deleted ? "success" : "error",
           `Deleted ${plural(deleted, "message")}${target ? ` from ${target}` : ""}.${skipped ? ` ${plural(skipped, "message")} were older than two weeks, which Discord doesn't allow bulk-deleting.` : ""}`,
         );
-        if (deleted) await sendStaffLog(guild, { embeds: [notice("info", `**${moderator}** purged ${plural(deleted, "message")}${target ? ` from ${target}` : ""} in ${channel}.`)] });
+        if (deleted)
+          await sendStaffLog(guild, {
+            embeds: [
+              notice(
+                "info",
+                `**${moderator}** purged ${plural(deleted, "message")}${target ? ` from ${target}` : ""} in ${channel}.`,
+              ),
+            ],
+          });
         return;
       }
     }
@@ -332,7 +423,9 @@ const protectionAdmin: AdminGroup = {
           .setName("configure")
           .setDescription("Turn scam protection on or off, and choose the timeout")
           .addBooleanOption((o) => o.setName("enabled").setDescription("Delete likely scams automatically"))
-          .addIntegerOption((o) => o.setName("timeout").setDescription("How long to time out whoever posted it").addChoices(TIMEOUT_CHOICES)),
+          .addIntegerOption((o) =>
+            o.setName("timeout").setDescription("How long to time out whoever posted it").addChoices(TIMEOUT_CHOICES),
+          ),
       )
       .addSubcommand((sub) =>
         sub
@@ -344,7 +437,10 @@ const protectionAdmin: AdminGroup = {
   async execute(interaction) {
     const { guildId } = interaction;
     if (interaction.options.getSubcommand() === "test") {
-      const verdict = checkMessage({ content: interaction.options.getString("message", true), canMentionEveryone: false });
+      const verdict = checkMessage({
+        content: interaction.options.getString("message", true),
+        canMentionEveryone: false,
+      });
       const text = !verdict
         ? "Tuli would let this through."
         : `Tuli would ${verdict.action === "block" ? "**delete it and time out the sender**" : "**flag it for staff**"}:\n${verdict.reasons.map((r) => `• ${r}`).join("\n")}`;
@@ -396,14 +492,25 @@ export const moderationFeature: Feature = {
       content: message.content,
       canMentionEveryone: message.channel.permissionsFor(member).has(PermissionFlagsBits.MentionEveryone),
     });
-    const key = repeatKey(message.content, [...message.attachments.values()].map((file) => `${file.name}:${file.size}`));
+    const key = repeatKey(
+      message.content,
+      [...message.attachments.values()].map((file) => `${file.name}:${file.size}`),
+    );
     const burst = key
-      ? tracker.record(message.guildId, member.id, { channelId: message.channelId, messageId: message.id, key, at: message.createdTimestamp })
+      ? tracker.record(message.guildId, member.id, {
+          channelId: message.channelId,
+          messageId: message.id,
+          key,
+          at: message.createdTimestamp,
+        })
       : null;
 
     if (burst || verdict?.action === "block") {
       const reasons = [...(verdict?.action === "block" ? verdict.reasons : [])];
-      if (burst) reasons.push(`Posted the same message in ${new Set(burst.map((m) => m.channelId)).size} channels within a minute`);
+      if (burst)
+        reasons.push(
+          `Posted the same message in ${new Set(burst.map((m) => m.channelId)).size} channels within a minute`,
+        );
       await blockScam(message, member, reasons, burst ?? [{ channelId: message.channelId, messageId: message.id }]);
       return STOP;
     }
@@ -413,12 +520,15 @@ export const moderationFeature: Feature = {
   describeSettings(guild) {
     const on = getSetting(guild.id, "scamProtection") ?? true;
     const minutes = timeoutMinutes(guild.id);
-    const lines = [on ? `On · ${minutes ? `times out for ${durationLabel(minutes)}` : "deletes without timing out"}` : "Off"];
+    const lines = [
+      on ? `On · ${minutes ? `times out for ${durationLabel(minutes)}` : "deletes without timing out"}` : "Off",
+    ];
     if (on && !canReadMessages(guild)) {
-      lines.push("⚠️ Tuli can't read messages yet. Turn on **Message Content Intent** in the Discord Developer Portal → Bot, then restart Tuli.");
+      lines.push(
+        "⚠️ Tuli can't read messages yet. Turn on **Message Content Intent** in the Discord Developer Portal → Bot, then restart Tuli.",
+      );
     }
     if (on && !getSetting(guild.id, "logChannelId")) lines.push("⚠️ Set a staff log channel to see what Tuli blocks.");
     return [{ name: "🛡️ Scam protection", value: lines.join("\n") }];
   },
 };
-

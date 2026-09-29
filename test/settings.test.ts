@@ -8,7 +8,12 @@ test("settings are saved per server and can be cleared", () => {
   setSetting("s1", "logChannelId", "456");
   setSetting("s2", "logChannelId", "789");
   assert.equal(getSetting("s1", "logChannelId"), "456");
-  assert.deepEqual(guildsWithSetting("logChannelId").map((row) => row.guildId).sort(), ["s1", "s2"]);
+  assert.deepEqual(
+    guildsWithSetting("logChannelId")
+      .map((row) => row.guildId)
+      .sort(),
+    ["s1", "s2"],
+  );
   setSetting("s1", "logChannelId", undefined);
   assert.equal(getSetting("s1", "logChannelId"), undefined);
 });

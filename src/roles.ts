@@ -20,7 +20,8 @@ export function rewardRoleProblem(role: Role): string | null {
   if (role.id === role.guild.id) return "@everyone can't be a reward.";
   if (role.managed) return `${role} belongs to a bot or integration, so it can't be handed out.`;
   if (role.permissions.any(STAFF_PERMISSIONS)) return `${role} has staff permissions, so it can't be a reward.`;
-  if (!me?.permissions.has(PermissionFlagsBits.ManageRoles)) return "Tuli needs the **Manage Roles** permission to hand out roles.";
+  if (!me?.permissions.has(PermissionFlagsBits.ManageRoles))
+    return "Tuli needs the **Manage Roles** permission to hand out roles.";
   if (role.comparePositionTo(me.roles.highest) >= 0) {
     return `Tuli can only hand out roles below its own. In Server Settings → Roles, drag **${me.roles.highest.name}** above ${role}.`;
   }

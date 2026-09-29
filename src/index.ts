@@ -79,7 +79,10 @@ process.once("SIGTERM", shutDown);
 try {
   await client.login(token);
 } catch (error) {
-  if (error instanceof Error && /disallowed intents|DisallowedIntents/i.test(`${error.message} ${"code" in error ? error.code : ""}`)) {
+  if (
+    error instanceof Error &&
+    /disallowed intents|DisallowedIntents/i.test(`${error.message} ${"code" in error ? error.code : ""}`)
+  ) {
     await runWithoutReadingMessages();
   } else if (!fellBack) {
     throw error;

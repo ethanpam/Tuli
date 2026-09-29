@@ -124,5 +124,7 @@ export function pageButtons(
       .setLabel(label)
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(target < 0 || target >= pageCount);
-  return [new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Previous", page - 1), button("Next ▶", page + 1))];
+  return [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(button("◀ Previous", page - 1), button("Next ▶", page + 1)),
+  ];
 }

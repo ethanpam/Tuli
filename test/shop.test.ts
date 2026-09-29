@@ -30,7 +30,10 @@ test("findItem accepts an ID or a name, and search matches part of a name", () =
   assert.equal(findItem("s3", String(item.id))?.name, "VIP Role");
   assert.equal(findItem("s3", "vip role")?.id, item.id);
   assert.equal(findItem("s3", "nope"), undefined);
-  assert.deepEqual(searchItems("s3", "vip").map((i) => i.id), [item.id]);
+  assert.deepEqual(
+    searchItems("s3", "vip").map((i) => i.id),
+    [item.id],
+  );
   assert.deepEqual(searchItems("s3", "%"), [], "LIKE wildcards are treated as text");
 });
 
@@ -69,11 +72,17 @@ test("refunds return points and stock once; delivered orders can't be delivered 
   assert.equal(refundOrder("s6", second.id, "staff"), undefined, "can't refund twice");
   assert.equal(getBalance("s6", "a"), 200);
   assert.equal(getItem("s6", item.id)?.stock, 4);
-  assert.deepEqual(memberOrders("s6", "a", 10).map((o) => o.status), ["refunded", "delivered"]);
+  assert.deepEqual(
+    memberOrders("s6", "a", 10).map((o) => o.status),
+    ["refunded", "delivered"],
+  );
 });
 
 test("editing keeps unchanged fields and can make stock unlimited", () => {
   const item = addItem("s7", { ...hint, stock: 3 });
   const edited = updateItem("s7", item.id, { price: 150, stock: null });
-  assert.deepEqual([edited.name, edited.price, edited.stock, edited.description], ["Trivia hint", 150, null, hint.description]);
+  assert.deepEqual(
+    [edited.name, edited.price, edited.stock, edited.description],
+    ["Trivia hint", 150, null, hint.description],
+  );
 });

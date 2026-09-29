@@ -43,7 +43,9 @@ export interface MemberLevel {
 const selectLevel = db.prepare(
   "SELECT xp, level, message_count, last_xp_at FROM members WHERE guild_id = $guildId AND user_id = $userId",
 );
-const countMessage = db.prepare("UPDATE members SET message_count = message_count + 1 WHERE guild_id = $guildId AND user_id = $userId");
+const countMessage = db.prepare(
+  "UPDATE members SET message_count = message_count + 1 WHERE guild_id = $guildId AND user_id = $userId",
+);
 const updateXp = db.prepare(
   "UPDATE members SET xp = $xp, level = $level, last_xp_at = $now WHERE guild_id = $guildId AND user_id = $userId",
 );
@@ -60,10 +62,19 @@ const upsertReward = db.prepare(`
   INSERT INTO level_rewards (guild_id, level, role_id) VALUES ($guildId, $level, $roleId)
   ON CONFLICT (guild_id, role_id) DO UPDATE SET level = excluded.level`);
 const deleteReward = db.prepare("DELETE FROM level_rewards WHERE guild_id = $guildId AND role_id = $roleId");
-const selectRewards = db.prepare("SELECT level, role_id FROM level_rewards WHERE guild_id = $guildId ORDER BY level, role_id");
+const selectRewards = db.prepare(
+  "SELECT level, role_id FROM level_rewards WHERE guild_id = $guildId ORDER BY level, role_id",
+);
 
 export function getLevel(guildId: string, userId: string): MemberLevel {
-  return (selectLevel.get({ guildId, userId }) as MemberLevel | undefined) ?? { xp: 0, level: 0, message_count: 0, last_xp_at: 0 };
+  return (
+    (selectLevel.get({ guildId, userId }) as MemberLevel | undefined) ?? {
+      xp: 0,
+      level: 0,
+      message_count: 0,
+      last_xp_at: 0,
+    }
+  );
 }
 
 export type XpResult =
@@ -108,7 +119,12 @@ export function setLevel(guildId: string, userId: string, displayName: string, l
 }
 
 export function topByXp(guildId: string, limit: number, offset: number) {
-  return selectTop.all({ guildId, limit, offset }) as { user_id: string; display_name: string | null; xp: number; level: number }[];
+  return selectTop.all({ guildId, limit, offset }) as {
+    user_id: string;
+    display_name: string | null;
+    xp: number;
+    level: number;
+  }[];
 }
 
 export function countWithXp(guildId: string): number {

@@ -69,7 +69,9 @@ async function postNextQuestion(guild: Guild): Promise<{ question: Question } | 
   const channel = questionChannel(guild);
   if (!channel) return { problem: "No question channel is set up. Use `/admin questions schedule` to pick one." };
   if (!channel.permissionsFor(guild.client.user)?.has(CHANNEL_PERMISSIONS)) {
-    return { problem: `Tuli needs View Channel, Send Messages, Embed Links, Create Public Threads and Send Messages in Threads in ${channel}.` };
+    return {
+      problem: `Tuli needs View Channel, Send Messages, Embed Links, Create Public Threads and Send Messages in Threads in ${channel}.`,
+    };
   }
   const question = claimNextQuestion(guild.id);
   if (!question) return { problem: "The question queue is empty. Add some with `/admin questions add`." };
@@ -91,7 +93,8 @@ async function postNextQuestion(guild: Guild): Promise<{ question: Question } | 
     const thread = await message
       .startThread({
         name: truncate(`💬 ${label}: ${oneLine(question.text)}`, 100),
-        autoArchiveDuration: schedule?.frequency === "weekly" ? ThreadAutoArchiveDuration.OneWeek : ThreadAutoArchiveDuration.OneDay,
+        autoArchiveDuration:
+          schedule?.frequency === "weekly" ? ThreadAutoArchiveDuration.OneWeek : ThreadAutoArchiveDuration.OneDay,
       })
       .catch(() => null);
     recordPost(question.id, channel.id, message.id, thread?.id ?? null);
@@ -104,7 +107,14 @@ async function postNextQuestion(guild: Guild): Promise<{ question: Question } | 
   const left = countByStatus(guild.id, "queued");
   if (left <= LOW_QUEUE_WARNING) {
     await sendStaffLog(guild, {
-      embeds: [notice("warning", left === 0 ? "That was the last queued question. Add more with `/admin questions add`." : `Only ${plural(left, "question")} left in the queue.`)],
+      embeds: [
+        notice(
+          "warning",
+          left === 0
+            ? "That was the last queued question. Add more with `/admin questions add`."
+            : `Only ${plural(left, "question")} left in the queue.`,
+        ),
+      ],
     });
   }
   return { question };
@@ -126,7 +136,9 @@ function startScheduler(client: Client<true>) {
         setSetting(guildId, "questionLastRunAt", now);
         const result = await postNextQuestion(guild);
         if ("problem" in result) {
-          await sendStaffLog(guild, { embeds: [notice("warning", `Tuli skipped a scheduled question. ${result.problem}`)] });
+          await sendStaffLog(guild, {
+            embeds: [notice("warning", `Tuli skipped a scheduled question. ${result.problem}`)],
+          });
         }
       }
     } catch (error) {
@@ -141,8 +153,14 @@ function startScheduler(client: Client<true>) {
 
 function reviewButtons(questionId: number) {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId(`question-review:${questionId}:approve`).setLabel("Add to queue").setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId(`question-review:${questionId}:reject`).setLabel("Reject").setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId(`question-review:${questionId}:approve`)
+      .setLabel("Add to queue")
+      .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId(`question-review:${questionId}:reject`)
+      .setLabel("Reject")
+      .setStyle(ButtonStyle.Danger),
   );
 }
 
@@ -156,7 +174,9 @@ const questionCommand: SlashCommand = {
       sub
         .setName("suggest")
         .setDescription("Suggest a question for the server")
-        .addStringOption((o) => o.setName("question").setDescription("Your question").setRequired(true).setMaxLength(MAX_QUESTION_LENGTH)),
+        .addStringOption((o) =>
+          o.setName("question").setDescription("Your question").setRequired(true).setMaxLength(MAX_QUESTION_LENGTH),
+        ),
     ),
 
   async execute(interaction) {
@@ -167,10 +187,14 @@ const questionCommand: SlashCommand = {
         await replyNotice(interaction, "info", "No questions have been posted yet.");
         return;
       }
-      const where = question.thread_id ? `<#${question.thread_id}>` : `[the post](${messageLink(question.channel_id, question.message_id, guild.id)})`;
+      const where = question.thread_id
+        ? `<#${question.thread_id}>`
+        : `[the post](${messageLink(question.channel_id, question.message_id, guild.id)})`;
       const card = embed()
         .setAuthor({ name: `${questionLabel(getSetting(guild.id, "questionSchedule"))} #${question.number}` })
-        .setDescription(`## ${question.text}\nAnswer in ${where} · your first answer earns ${formatPoints(ANSWER_POINTS)}`)
+        .setDescription(
+          `## ${question.text}\nAnswer in ${where} · your first answer earns ${formatPoints(ANSWER_POINTS)}`,
+        )
         .setTimestamp(question.posted_at);
       await interaction.reply({ embeds: [card], flags: MessageFlags.Ephemeral });
       return;
@@ -194,7 +218,11 @@ const questionCommand: SlashCommand = {
     const posted = await sendStaffLog(guild, { embeds: [card], components: [reviewButtons(suggestion.id)] });
     if (!posted) {
       rejectSuggestion(guild.id, suggestion.id);
-      await replyNotice(interaction, "error", "Tuli couldn't reach the staff channel, so your suggestion wasn't sent. Please try again later.");
+      await replyNotice(
+        interaction,
+        "error",
+        "Tuli couldn't reach the staff channel, so your suggestion wasn't sent. Please try again later.",
+      );
       return;
     }
     await replyNotice(interaction, "success", "Thanks! Your question was sent to the staff to review.");
@@ -210,13 +238,15 @@ const reviewHandler: ComponentHandler = {
     }
     const { guild } = interaction;
     const question = getQuestion(guild.id, Number(id));
-    const done = action === "approve" ? approveSuggestion(guild.id, Number(id)) : rejectSuggestion(guild.id, Number(id));
+    const done =
+      action === "approve" ? approveSuggestion(guild.id, Number(id)) : rejectSuggestion(guild.id, Number(id));
     if (!done || !question) {
       await replyNotice(interaction, "info", "Someone already reviewed this suggestion.");
       return;
     }
     const [card] = interaction.message.embeds;
-    const verdict = action === "approve" ? `✅ Added to the queue by ${interaction.user}` : `❌ Rejected by ${interaction.user}`;
+    const verdict =
+      action === "approve" ? `✅ Added to the queue by ${interaction.user}` : `❌ Rejected by ${interaction.user}`;
     const updated = embed(action === "approve" ? Colors.success : Colors.danger)
       .setTitle(card?.title ?? "💡 Question suggestion")
       .setDescription(`${card?.description ?? question.text}\n\n${verdict}`);
@@ -225,7 +255,14 @@ const reviewHandler: ComponentHandler = {
     if (action === "approve") {
       const author = await guild.members.fetch(question.added_by_id).catch(() => null);
       await author
-        ?.send({ embeds: [notice("success", `Your question suggestion in **${escapeMarkdown(guild.name)}** was added to the queue: "${escapeMarkdown(question.text)}"`)] })
+        ?.send({
+          embeds: [
+            notice(
+              "success",
+              `Your question suggestion in **${escapeMarkdown(guild.name)}** was added to the queue: "${escapeMarkdown(question.text)}"`,
+            ),
+          ],
+        })
         .catch(() => {});
     }
   },
@@ -244,7 +281,11 @@ const questionsAdmin: AdminGroup = {
           .setName("schedule")
           .setDescription("Where and when questions are posted")
           .addChannelOption((o) =>
-            o.setName("channel").setDescription("Where to post").setRequired(true).addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+            o
+              .setName("channel")
+              .setDescription("Where to post")
+              .setRequired(true)
+              .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
           )
           .addStringOption((o) =>
             o
@@ -253,8 +294,12 @@ const questionsAdmin: AdminGroup = {
               .setRequired(true)
               .addChoices({ name: "Every day", value: "daily" }, { name: "Once a week", value: "weekly" }),
           )
-          .addIntegerOption((o) => o.setName("hour").setDescription("What time (server timezone)").setRequired(true).addChoices(HOURS))
-          .addIntegerOption((o) => o.setName("weekday").setDescription("Which day, for weekly questions").addChoices(WEEKDAY_CHOICES))
+          .addIntegerOption((o) =>
+            o.setName("hour").setDescription("What time (server timezone)").setRequired(true).addChoices(HOURS),
+          )
+          .addIntegerOption((o) =>
+            o.setName("weekday").setDescription("Which day, for weekly questions").addChoices(WEEKDAY_CHOICES),
+          )
           .addRoleOption((o) => o.setName("ping").setDescription("A role to ping with each question")),
       )
       .addSubcommand((sub) => sub.setName("pause").setDescription("Stop posting questions (the queue is kept)"))
@@ -262,14 +307,18 @@ const questionsAdmin: AdminGroup = {
         sub
           .setName("add")
           .setDescription("Add a question to the queue")
-          .addStringOption((o) => o.setName("question").setDescription("The question").setRequired(true).setMaxLength(MAX_QUESTION_LENGTH)),
+          .addStringOption((o) =>
+            o.setName("question").setDescription("The question").setRequired(true).setMaxLength(MAX_QUESTION_LENGTH),
+          ),
       )
       .addSubcommand((sub) => sub.setName("queue").setDescription("See the questions waiting to be posted"))
       .addSubcommand((sub) =>
         sub
           .setName("remove")
           .setDescription("Remove a question from the queue")
-          .addIntegerOption((o) => o.setName("id").setDescription("The ID shown in /admin questions queue").setRequired(true).setMinValue(1)),
+          .addIntegerOption((o) =>
+            o.setName("id").setDescription("The ID shown in /admin questions queue").setRequired(true).setMinValue(1),
+          ),
       )
       .addSubcommand((sub) => sub.setName("post-now").setDescription("Post the next question right away")),
 
@@ -277,7 +326,10 @@ const questionsAdmin: AdminGroup = {
     const { guild } = interaction;
     switch (interaction.options.getSubcommand()) {
       case "schedule": {
-        const channel = interaction.options.getChannel("channel", true, [ChannelType.GuildText, ChannelType.GuildAnnouncement]);
+        const channel = interaction.options.getChannel("channel", true, [
+          ChannelType.GuildText,
+          ChannelType.GuildAnnouncement,
+        ]);
         const frequency = interaction.options.getString("frequency", true) as QuestionSchedule["frequency"];
         const weekday = interaction.options.getInteger("weekday");
         const ping = interaction.options.getRole("ping");
@@ -286,10 +338,18 @@ const questionsAdmin: AdminGroup = {
           return;
         }
         if (!channel.permissionsFor(interaction.client.user)?.has(CHANNEL_PERMISSIONS)) {
-          await replyNotice(interaction, "error", `Tuli needs View Channel, Send Messages, Embed Links, Create Public Threads and Send Messages in Threads in ${channel}.`);
+          await replyNotice(
+            interaction,
+            "error",
+            `Tuli needs View Channel, Send Messages, Embed Links, Create Public Threads and Send Messages in Threads in ${channel}.`,
+          );
           return;
         }
-        const schedule: QuestionSchedule = { frequency, weekday: weekday ?? 1, hour: interaction.options.getInteger("hour", true) };
+        const schedule: QuestionSchedule = {
+          frequency,
+          weekday: weekday ?? 1,
+          hour: interaction.options.getInteger("hour", true),
+        };
         setSetting(guild.id, "questionChannelId", channel.id);
         setSetting(guild.id, "questionSchedule", schedule);
         setSetting(guild.id, "questionPingRoleId", ping?.id);
@@ -301,9 +361,15 @@ const questionsAdmin: AdminGroup = {
         const lines = [
           `Questions will be posted in ${channel} ${describeSchedule(schedule)} (${timezone}).`,
           `Next one: ${time(next, TimestampStyles.LongDateTime)} (${time(next, TimestampStyles.RelativeTime)})`,
-          queued ? `${plural(queued, "question")} in the queue.` : "⚠️ The queue is empty. Add questions with `/admin questions add`.",
+          queued
+            ? `${plural(queued, "question")} in the queue.`
+            : "⚠️ The queue is empty. Add questions with `/admin questions add`.",
         ];
-        if (ping && !ping.mentionable && !channel.permissionsFor(interaction.client.user)?.has(PermissionFlagsBits.MentionEveryone)) {
+        if (
+          ping &&
+          !ping.mentionable &&
+          !channel.permissionsFor(interaction.client.user)?.has(PermissionFlagsBits.MentionEveryone)
+        ) {
           lines.push(`⚠️ ${ping} can't be pinged. Turn on "Allow anyone to @mention this role" in its settings.`);
         }
         await replyNotice(interaction, "success", lines.join("\n"));
@@ -312,7 +378,11 @@ const questionsAdmin: AdminGroup = {
 
       case "pause": {
         setSetting(guild.id, "questionSchedule", undefined);
-        await replyNotice(interaction, "success", "Questions are paused. The queue is kept; use `/admin questions schedule` to start again.");
+        await replyNotice(
+          interaction,
+          "success",
+          "Questions are paused. The queue is kept; use `/admin questions schedule` to start again.",
+        );
         return;
       }
 
@@ -325,7 +395,11 @@ const questionsAdmin: AdminGroup = {
         }
         const question = addQuestion(guild.id, text, interaction.user.id, "queued");
         const position = countByStatus(guild.id, "queued");
-        await replyNotice(interaction, "success", `Added question ${question.id}. It's number ${position} in the queue.`);
+        await replyNotice(
+          interaction,
+          "success",
+          `Added question ${question.id}. It's number ${position} in the queue.`,
+        );
         return;
       }
 
@@ -334,7 +408,10 @@ const questionsAdmin: AdminGroup = {
         const total = countByStatus(guild.id, "queued");
         const suggestions = countByStatus(guild.id, "suggested");
         const schedule = getSetting(guild.id, "questionSchedule");
-        const lines = queued.map((question, index) => `**${index + 1}.** ${escapeMarkdown(truncate(oneLine(question.text), 90))} \`ID ${question.id}\``);
+        const lines = queued.map(
+          (question, index) =>
+            `**${index + 1}.** ${escapeMarkdown(truncate(oneLine(question.text), 90))} \`ID ${question.id}\``,
+        );
         const list = embed()
           .setTitle(`❓ Question queue (${total})`)
           .setDescription(lines.join("\n") || "The queue is empty. Add questions with `/admin questions add`.")
@@ -354,7 +431,11 @@ const questionsAdmin: AdminGroup = {
       case "remove": {
         const id = interaction.options.getInteger("id", true);
         const removed = removeQuestion(guild.id, id);
-        await replyNotice(interaction, removed ? "success" : "error", removed ? `Removed question ${id}.` : `There's no waiting question with ID ${id}.`);
+        await replyNotice(
+          interaction,
+          removed ? "success" : "error",
+          removed ? `Removed question ${id}.` : `There's no waiting question with ID ${id}.`,
+        );
         return;
       }
 
@@ -413,4 +494,3 @@ export const questionsFeature: Feature = {
     return [{ name: "❓ Questions", value: lines.join("\n") }];
   },
 };
-

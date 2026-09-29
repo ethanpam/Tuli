@@ -43,7 +43,11 @@ test("duplicates are caught ignoring case, spacing and trailing punctuation", ()
   assert.ok(findWaitingDuplicate("q4", "WHAT'S YOUR FAVORITE FOOD?!"));
   assert.equal(findWaitingDuplicate("q4", "What's your favorite drink?"), undefined);
   claimNextQuestion("q4");
-  assert.equal(findWaitingDuplicate("q4", "What's your favorite food?"), undefined, "posted questions can be asked again");
+  assert.equal(
+    findWaitingDuplicate("q4", "What's your favorite food?"),
+    undefined,
+    "posted questions can be asked again",
+  );
 });
 
 test("suggestions are approved into the queue or rejected, once", () => {

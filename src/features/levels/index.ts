@@ -56,7 +56,12 @@ async function celebrateLevelUp(message: Message<true>, level: number, bonusPoin
     .setThumbnail(member.displayAvatarURL())
     .setDescription(`## 🎉 Level ${level}!\n${member} just reached **level ${level}**.`)
     .addFields({ name: "Bonus", value: `+${formatPoints(bonusPoints)}`, inline: true });
-  if (newRoles.length) celebration.addFields({ name: newRoles.length === 1 ? "New role" : "New roles", value: newRoles.join(" "), inline: true });
+  if (newRoles.length)
+    celebration.addFields({
+      name: newRoles.length === 1 ? "New role" : "New roles",
+      value: newRoles.join(" "),
+      inline: true,
+    });
   try {
     await channel.send({ content: `${member}`, embeds: [celebration], allowedMentions: { users: [member.id] } });
   } catch (error) {
@@ -77,7 +82,8 @@ const rankCommand: SlashCommand = {
       await replyNotice(interaction, "error", "Bots don't have levels.");
       return;
     }
-    const member = interaction.options.getMember("member") ?? (user.id === interaction.user.id ? interaction.member : null);
+    const member =
+      interaction.options.getMember("member") ?? (user.id === interaction.user.id ? interaction.member : null);
     const stats = getLevel(interaction.guildId, user.id);
     const progress = levelProgress(stats.xp);
     const nextReward = listRewards(interaction.guildId).find((reward) => reward.level > progress.level);
@@ -92,14 +98,18 @@ const rankCommand: SlashCommand = {
       .addFields(
         {
           name: "Rank",
-          value: stats.xp > 0 ? `#${xpPosition(interaction.guildId, user.id)} of ${formatNumber(countWithXp(interaction.guildId))}` : "Unranked",
+          value:
+            stats.xp > 0
+              ? `#${xpPosition(interaction.guildId, user.id)} of ${formatNumber(countWithXp(interaction.guildId))}`
+              : "Unranked",
           inline: true,
         },
         { name: "Total XP", value: formatNumber(stats.xp), inline: true },
         { name: "Messages", value: formatNumber(stats.message_count), inline: true },
       )
       .setFooter({ text: "Chat to earn XP (once a minute) · Each level-up gives bonus points" });
-    if (nextReward) card.addFields({ name: "Next reward", value: `<@&${nextReward.role_id}> at level ${nextReward.level}` });
+    if (nextReward)
+      card.addFields({ name: "Next reward", value: `<@&${nextReward.role_id}> at level ${nextReward.level}` });
     await interaction.reply({ embeds: [card] });
   },
 };
@@ -113,7 +123,9 @@ const levelsAdmin: AdminGroup = {
         sub
           .setName("reward")
           .setDescription("Give a role to everyone who reaches a level")
-          .addIntegerOption((o) => o.setName("level").setDescription("The level").setRequired(true).setMinValue(1).setMaxValue(MAX_LEVEL))
+          .addIntegerOption((o) =>
+            o.setName("level").setDescription("The level").setRequired(true).setMinValue(1).setMaxValue(MAX_LEVEL),
+          )
           .addRoleOption((o) => o.setName("role").setDescription("The role to give").setRequired(true)),
       )
       .addSubcommand((sub) =>
@@ -139,7 +151,10 @@ const levelsAdmin: AdminGroup = {
               ),
           )
           .addChannelOption((o) =>
-            o.setName("channel").setDescription("The channel, if you picked a specific one").addChannelTypes(ChannelType.GuildText),
+            o
+              .setName("channel")
+              .setDescription("The channel, if you picked a specific one")
+              .addChannelTypes(ChannelType.GuildText),
           ),
       )
       .addSubcommand((sub) =>
@@ -147,7 +162,14 @@ const levelsAdmin: AdminGroup = {
           .setName("set")
           .setDescription("Set someone's level, e.g. to carry it over from another bot")
           .addUserOption((o) => o.setName("member").setDescription("Whose level to set").setRequired(true))
-          .addIntegerOption((o) => o.setName("level").setDescription("Their new level").setRequired(true).setMinValue(0).setMaxValue(MAX_LEVEL)),
+          .addIntegerOption((o) =>
+            o
+              .setName("level")
+              .setDescription("Their new level")
+              .setRequired(true)
+              .setMinValue(0)
+              .setMaxValue(MAX_LEVEL),
+          ),
       ),
 
   async execute(interaction) {
@@ -168,9 +190,16 @@ const levelsAdmin: AdminGroup = {
         let given = 0;
         for (const userId of membersAtLevel(guildId, level)) {
           const member = await guild.members.fetch(userId).catch(() => null);
-          if (member && !member.roles.cache.has(role.id) && !(await giveRole(member, role.id, `Reached level ${level}`))) given++;
+          if (
+            member &&
+            !member.roles.cache.has(role.id) &&
+            !(await giveRole(member, role.id, `Reached level ${level}`))
+          )
+            given++;
         }
-        const catchUp = given ? ` Also gave it to ${plural(given, "member")} who were already level ${level} or higher.` : "";
+        const catchUp = given
+          ? ` Also gave it to ${plural(given, "member")} who were already level ${level} or higher.`
+          : "";
         await replyNotice(interaction, "success", `Members now get ${role} at level ${level}.${catchUp}`);
         return;
       }
@@ -181,7 +210,9 @@ const levelsAdmin: AdminGroup = {
         await replyNotice(
           interaction,
           removed ? "success" : "info",
-          removed ? `${role} is no longer a level reward. People who already have it keep it.` : `${role} isn't a level reward.`,
+          removed
+            ? `${role} is no longer a level reward. People who already have it keep it.`
+            : `${role} isn't a level reward.`,
         );
         return;
       }
@@ -216,7 +247,9 @@ const levelsAdmin: AdminGroup = {
           await replyNotice(
             interaction,
             "success",
-            where === "off" ? "Level-ups won't be announced. Reward roles are still given." : "Level-ups will be announced where they happen.",
+            where === "off"
+              ? "Level-ups won't be announced. Reward roles are still given."
+              : "Level-ups will be announced where they happen.",
           );
         }
         return;
@@ -238,9 +271,15 @@ const levelsAdmin: AdminGroup = {
             if (problem) problems.push(problem);
           }
         }
-        await replyNotice(interaction, "success", `${user} is now level ${level}.${problems.length ? `\n⚠️ ${problems.join("\n⚠️ ")}` : ""}`);
+        await replyNotice(
+          interaction,
+          "success",
+          `${user} is now level ${level}.${problems.length ? `\n⚠️ ${problems.join("\n⚠️ ")}` : ""}`,
+        );
         await sendStaffLog(guild, {
-          embeds: [notice("info", `**${escapeMarkdown(interaction.member.displayName)}** set ${user}'s level to ${level}.`)],
+          embeds: [
+            notice("info", `**${escapeMarkdown(interaction.member.displayName)}** set ${user}'s level to ${level}.`),
+          ],
         });
         return;
       }
@@ -268,7 +307,11 @@ export const levelsFeature: Feature = {
   permissions: { ManageRoles: "give level reward roles" },
 
   async onMessage(message) {
-    const result = awardMessageXp(message.guildId, message.author.id, message.member?.displayName ?? message.author.displayName);
+    const result = awardMessageXp(
+      message.guildId,
+      message.author.id,
+      message.member?.displayName ?? message.author.displayName,
+    );
     if (result.awarded && result.level > result.previousLevel) {
       await celebrateLevelUp(message, result.level, result.bonusPoints);
     }
@@ -286,7 +329,9 @@ export const levelsFeature: Feature = {
     return [
       {
         name: "🏆 Levels",
-        value: [`Level-up announcements: ${announce}`, `Reward roles: ${rewards.length || "none"}`, ...warnings].join("\n").slice(0, 1024),
+        value: [`Level-up announcements: ${announce}`, `Reward roles: ${rewards.length || "none"}`, ...warnings]
+          .join("\n")
+          .slice(0, 1024),
       },
     ];
   },

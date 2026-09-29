@@ -12,7 +12,9 @@ export interface Warning {
 const insertWarning = db.prepare(`
   INSERT INTO warnings (guild_id, user_id, moderator_id, reason, created_at)
   VALUES ($guildId, $userId, $moderatorId, $reason, $now) RETURNING *`);
-const selectWarnings = db.prepare("SELECT * FROM warnings WHERE guild_id = $guildId AND user_id = $userId ORDER BY id DESC");
+const selectWarnings = db.prepare(
+  "SELECT * FROM warnings WHERE guild_id = $guildId AND user_id = $userId ORDER BY id DESC",
+);
 const deleteWarningRow = db.prepare("DELETE FROM warnings WHERE guild_id = $guildId AND id = $id RETURNING *");
 
 export function addWarning(guildId: string, userId: string, moderatorId: string, reason: string): Warning {

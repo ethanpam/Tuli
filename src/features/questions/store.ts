@@ -18,29 +18,53 @@ const insertQuestion = db.prepare(`
   INSERT INTO questions (guild_id, text, status, added_by_id, created_at)
   VALUES ($guildId, $text, $status, $addedBy, $now) RETURNING *`);
 const selectQuestion = db.prepare("SELECT * FROM questions WHERE guild_id = $guildId AND id = $id");
-const selectWaiting = db.prepare("SELECT * FROM questions WHERE guild_id = $guildId AND status IN ('queued', 'suggested')");
+const selectWaiting = db.prepare(
+  "SELECT * FROM questions WHERE guild_id = $guildId AND status IN ('queued', 'suggested')",
+);
 const selectByStatus = db.prepare(
   "SELECT * FROM questions WHERE guild_id = $guildId AND status = $status ORDER BY id LIMIT $limit OFFSET $offset",
 );
-const selectCountByStatus = db.prepare("SELECT COUNT(*) AS count FROM questions WHERE guild_id = $guildId AND status = $status");
-const selectOldestQueued = db.prepare("SELECT * FROM questions WHERE guild_id = $guildId AND status = 'queued' ORDER BY id LIMIT 1");
-const selectNextNumber = db.prepare("SELECT COALESCE(MAX(number), 0) + 1 AS next FROM questions WHERE guild_id = $guildId");
+const selectCountByStatus = db.prepare(
+  "SELECT COUNT(*) AS count FROM questions WHERE guild_id = $guildId AND status = $status",
+);
+const selectOldestQueued = db.prepare(
+  "SELECT * FROM questions WHERE guild_id = $guildId AND status = 'queued' ORDER BY id LIMIT 1",
+);
+const selectNextNumber = db.prepare(
+  "SELECT COALESCE(MAX(number), 0) + 1 AS next FROM questions WHERE guild_id = $guildId",
+);
 const markPosted = db.prepare(
   "UPDATE questions SET status = 'posted', number = $number, posted_at = $now WHERE id = $id RETURNING *",
 );
 const markQueued = db.prepare("UPDATE questions SET status = 'queued', number = NULL, posted_at = NULL WHERE id = $id");
-const setPost = db.prepare("UPDATE questions SET channel_id = $channelId, message_id = $messageId, thread_id = $threadId WHERE id = $id");
-const approve = db.prepare("UPDATE questions SET status = 'queued' WHERE guild_id = $guildId AND id = $id AND status = 'suggested'");
-const deleteWaiting = db.prepare("DELETE FROM questions WHERE guild_id = $guildId AND id = $id AND status IN ('queued', 'suggested')");
-const deleteSuggestion = db.prepare("DELETE FROM questions WHERE guild_id = $guildId AND id = $id AND status = 'suggested'");
+const setPost = db.prepare(
+  "UPDATE questions SET channel_id = $channelId, message_id = $messageId, thread_id = $threadId WHERE id = $id",
+);
+const approve = db.prepare(
+  "UPDATE questions SET status = 'queued' WHERE guild_id = $guildId AND id = $id AND status = 'suggested'",
+);
+const deleteWaiting = db.prepare(
+  "DELETE FROM questions WHERE guild_id = $guildId AND id = $id AND status IN ('queued', 'suggested')",
+);
+const deleteSuggestion = db.prepare(
+  "DELETE FROM questions WHERE guild_id = $guildId AND id = $id AND status = 'suggested'",
+);
 const selectByThread = db.prepare("SELECT * FROM questions WHERE thread_id = $threadId");
-const selectLatestPosted = db.prepare("SELECT * FROM questions WHERE guild_id = $guildId AND status = 'posted' ORDER BY number DESC LIMIT 1");
-const insertAnswer = db.prepare("INSERT OR IGNORE INTO question_answers (question_id, user_id) VALUES ($questionId, $userId)");
+const selectLatestPosted = db.prepare(
+  "SELECT * FROM questions WHERE guild_id = $guildId AND status = 'posted' ORDER BY number DESC LIMIT 1",
+);
+const insertAnswer = db.prepare(
+  "INSERT OR IGNORE INTO question_answers (question_id, user_id) VALUES ($questionId, $userId)",
+);
 const selectAnswerCount = db.prepare("SELECT COUNT(*) AS count FROM question_answers WHERE question_id = $questionId");
 
 // Ignores capitalization, punctuation at the end, and extra spaces.
 function normalize(text: string): string {
-  return text.toLowerCase().replace(/\s+/g, " ").replace(/[\s?!.]+$/, "").trim();
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[\s?!.]+$/, "")
+    .trim();
 }
 
 export function addQuestion(guildId: string, text: string, addedBy: string, status: "queued" | "suggested"): Question {
