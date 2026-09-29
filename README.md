@@ -85,6 +85,23 @@ Staff commands live under `/admin`, which only members with **Manage Server** ca
 | `/admin questions post-now`, `pause` | Post the next question right away, or stop posting            |
 | `/admin protection configure`    | Turn scam protection on or off and pick the timeout length (default: on, 1 day) |
 | `/admin protection test`         | See what Tuli would do with a message, without posting it           |
+| `/admin feeds add url channel [keywords]` | Post new items from a website's RSS/Atom feed, optionally only ones mentioning certain words |
+| `/admin feeds list`, `remove`, `preview` | Manage feeds and see how their posts will look              |
+
+### Feeds
+
+Tuli checks each feed every 10 minutes and posts new items (at most 5 at a time, so a busy feed can't flood the channel). When you add a feed, only posts from then on are shared. Iowa State feeds that work:
+
+| Feed | Link |
+| --- | --- |
+| ISU News | `https://www.news.iastate.edu/rss.xml` |
+| Inside Iowa State | `https://www.inside.iastate.edu/rss.xml` |
+| Iowa State Daily | `https://iowastatedaily.com/feed/` |
+| Career Services | `https://www.career.iastate.edu/feed/` |
+| College of Engineering | `https://www.engineering.iastate.edu/feed/` |
+| Liberal Arts & Sciences | `https://www.las.iastate.edu/feed/` |
+
+Most WordPress sites have a feed at `/feed/`, and Drupal sites at `/rss.xml`. Use `keywords` to keep only opportunities, e.g. `internship, scholarship, research, hiring, apply`.
 
 ### Scam protection
 
@@ -107,7 +124,7 @@ Quote numbers are per server. Tuli won't save the same thing from the same perso
 - [x] Quotes: save quotes and share random ones
 - [x] Daily/weekly custom questions
 - [x] Moderation (scammer protection)
-- [ ] External feeds (ISU opportunities)
+- [x] External feeds (ISU opportunities)
 - [x] Currency: points tied to each member's Discord ID
 - [x] Item shop: redeem points for roles and other rewards
 - [x] Levels: XP from chatting, roles at XP milestones

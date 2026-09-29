@@ -1,6 +1,7 @@
 import type { Feature } from "../types.js";
 import { createAdminFeature } from "./admin.js";
 import { economyFeature, pointsBoard } from "./economy/index.js";
+import { feedsFeature } from "./feeds/index.js";
 import { greetFeature } from "./greet.js";
 import { helpFeature } from "./help.js";
 import { createLeaderboardFeature } from "./leaderboard.js";
@@ -23,6 +24,7 @@ const baseFeatures: Feature[] = [
   levelsFeature,
   shopFeature,
   questionsFeature,
+  feedsFeature,
   createLeaderboardFeature([levelsBoard, pointsBoard]),
 ];
 

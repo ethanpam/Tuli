@@ -129,6 +129,26 @@ const migrations = [
     created_at INTEGER NOT NULL
   );
   CREATE INDEX warnings_by_member ON warnings (guild_id, user_id, id)`,
+
+  // 8: RSS/Atom feeds, and which of their posts Tuli has already shared
+  `CREATE TABLE feeds (
+    id INTEGER PRIMARY KEY,
+    guild_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    url TEXT NOT NULL,
+    title TEXT NOT NULL,
+    keywords TEXT NOT NULL DEFAULT '',  -- comma-separated; empty = post everything
+    created_at INTEGER NOT NULL,
+    last_checked_at INTEGER,
+    last_error TEXT,
+    UNIQUE (guild_id, url, channel_id)
+  );
+  CREATE TABLE feed_items (
+    feed_id INTEGER NOT NULL,
+    item_key TEXT NOT NULL,             -- the post's guid, id or link
+    seen_at INTEGER NOT NULL,
+    PRIMARY KEY (feed_id, item_key)
+  )`,
 ];
 
 const { user_version: applied } = db.prepare("PRAGMA user_version").get() as { user_version: number };
