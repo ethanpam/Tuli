@@ -57,6 +57,8 @@ Tuli stores its data in `data/tuli.db` (SQLite, gitignored). Set `DATABASE_PATH`
 | `/rank [member]`                        | See a level, XP progress, rank and message count    |
 | `/leaderboard [board]`                  | See who's on top by level or points                 |
 | `/shop`                                 | Browse the shop, buy things with points, and check your orders |
+| `/question today`                       | Jump to the latest daily/weekly question            |
+| `/question suggest`                     | Suggest a question; staff approve it from the staff log |
 
 ### Staff commands
 
@@ -76,6 +78,9 @@ Staff commands live under `/admin`, which only members with **Manage Server** ca
 | `/admin shop add`                | Add an item: give it a role to hand out automatically, or leave the role empty for prizes staff deliver (real prizes, trivia hints) |
 | `/admin shop edit`, `remove`     | Change prices, descriptions and stock, or remove an item            |
 | `/admin shop orders`             | Deliver or refund orders waiting for staff (also possible from the buttons in the staff log) |
+| `/admin questions schedule`      | Post questions in a channel every day or once a week, at a set hour, optionally pinging a role |
+| `/admin questions add`, `queue`, `remove` | Manage the queue of questions (posted oldest first)        |
+| `/admin questions post-now`, `pause` | Post the next question right away, or stop posting            |
 
 Quote numbers are per server. Tuli won't save the same thing from the same person twice (ignoring capitalization, extra spaces, and quote marks). Commands register automatically when Tuli starts; if they don't appear, reload Discord with Ctrl+R (Cmd+R on Mac).
 
@@ -83,7 +88,7 @@ Quote numbers are per server. Tuli won't save the same thing from the same perso
 
 - [x] Greet people who mention Tuli
 - [x] Quotes: save quotes and share random ones
-- [ ] Daily/weekly custom questions
+- [x] Daily/weekly custom questions
 - [ ] Moderation (scammer protection)
 - [ ] External feeds (ISU opportunities)
 - [x] Currency: points tied to each member's Discord ID

@@ -5,6 +5,7 @@ import { greetFeature } from "./greet.js";
 import { helpFeature } from "./help.js";
 import { createLeaderboardFeature } from "./leaderboard.js";
 import { levelsBoard, levelsFeature } from "./levels/index.js";
+import { questionsFeature } from "./questions/index.js";
 import { quotesFeature } from "./quotes/index.js";
 import { createSetupFeature } from "./setup.js";
 import { shopFeature } from "./shop/index.js";
@@ -18,6 +19,7 @@ const baseFeatures: Feature[] = [
   economyFeature,
   levelsFeature,
   shopFeature,
+  questionsFeature,
   createLeaderboardFeature([levelsBoard, pointsBoard]),
 ];
 

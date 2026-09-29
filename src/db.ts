@@ -96,6 +96,28 @@ const migrations = [
   );
   CREATE INDEX shop_orders_by_member ON shop_orders (guild_id, user_id, id);
   CREATE INDEX shop_orders_by_status ON shop_orders (guild_id, status, id)`,
+
+  // 6: daily/weekly questions, and who has answered each one (for answer points).
+  `CREATE TABLE questions (
+    id INTEGER PRIMARY KEY,
+    guild_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    status TEXT NOT NULL,         -- 'suggested', 'queued' or 'posted'
+    added_by_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    number INTEGER,               -- #1, #2... per server, set when posted
+    posted_at INTEGER,
+    channel_id TEXT,
+    message_id TEXT,
+    thread_id TEXT
+  );
+  CREATE INDEX questions_by_status ON questions (guild_id, status, id);
+  CREATE UNIQUE INDEX questions_by_thread ON questions (thread_id);
+  CREATE TABLE question_answers (
+    question_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    PRIMARY KEY (question_id, user_id)
+  )`,
 ];
 
 const { user_version: applied } = db.prepare("PRAGMA user_version").get() as { user_version: number };

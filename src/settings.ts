@@ -8,6 +8,22 @@ export interface Settings {
   timezone: string;
   /** Where level-ups are announced: "here" (the channel they leveled up in), "off", or a channel ID. */
   levelUpChannel: "here" | "off" | (string & {});
+  /** Where questions are posted. */
+  questionChannelId: string;
+  /** When questions are posted automatically. Unset = paused. */
+  questionSchedule: QuestionSchedule;
+  /** A role to ping with each question. */
+  questionPingRoleId: string;
+  /** When the scheduler last ran, so it posts once per slot and catches up after downtime. */
+  questionLastRunAt: number;
+}
+
+export interface QuestionSchedule {
+  frequency: "daily" | "weekly";
+  /** 0 = Sunday ... 6 = Saturday. Only used for weekly questions. */
+  weekday: number;
+  /** 0-23, in the server's timezone. */
+  hour: number;
 }
 
 export const DEFAULT_TIMEZONE = "America/Chicago";

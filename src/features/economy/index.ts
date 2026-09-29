@@ -30,7 +30,7 @@ import {
 } from "./store.js";
 
 /** Shown under balances so people know how to earn more. */
-export const EARN_HINT = "Earn points with /points daily and by leveling up";
+export const EARN_HINT = "Earn points with /points daily, by leveling up, and by answering questions";
 
 const HISTORY_LENGTH = 15;
 const MAX_AMOUNT = 1_000_000;
