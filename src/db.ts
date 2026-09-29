@@ -118,6 +118,17 @@ const migrations = [
     user_id TEXT NOT NULL,
     PRIMARY KEY (question_id, user_id)
   )`,
+
+  // 7: moderator warnings
+  `CREATE TABLE warnings (
+    id INTEGER PRIMARY KEY,
+    guild_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    moderator_id TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX warnings_by_member ON warnings (guild_id, user_id, id)`,
 ];
 
 const { user_version: applied } = db.prepare("PRAGMA user_version").get() as { user_version: number };

@@ -13,7 +13,7 @@ A Discord bot for our community server, built with [discord.js](https://discord.
 3. Open the **Bot** tab:
    - Click **Reset Token** and copy the token. Treat it like a password: anyone with it can control the bot.
    - Turn off **Public Bot** so only you can add Tuli to servers.
-   - Leave the **Privileged Gateway Intents** off for now.
+   - Under **Privileged Gateway Intents**, turn on **Message Content Intent** so scam protection can read messages. (If it's off, Tuli still runs, just without scam detection.)
 4. Invite Tuli: run the bot (next section) and open the `Invite link:` it prints. Add Tuli to a private test server first, not the real community one.
 
 ### 2. Run it locally
@@ -59,6 +59,8 @@ Tuli stores its data in `data/tuli.db` (SQLite, gitignored). Set `DATABASE_PATH`
 | `/shop`                                 | Browse the shop, buy things with points, and check your orders |
 | `/question today`                       | Jump to the latest daily/weekly question            |
 | `/question suggest`                     | Suggest a question; staff approve it from the staff log |
+| `/mod warn`, `warnings`, `unwarn`       | Warn members (they get a DM) and review their record (moderators only) |
+| `/mod purge amount [member]`            | Bulk-delete recent messages in a channel (moderators only) |
 
 ### Staff commands
 
@@ -81,6 +83,21 @@ Staff commands live under `/admin`, which only members with **Manage Server** ca
 | `/admin questions schedule`      | Post questions in a channel every day or once a week, at a set hour, optionally pinging a role |
 | `/admin questions add`, `queue`, `remove` | Manage the queue of questions (posted oldest first)        |
 | `/admin questions post-now`, `pause` | Post the next question right away, or stop posting            |
+| `/admin protection configure`    | Turn scam protection on or off and pick the timeout length (default: on, 1 day) |
+| `/admin protection test`         | See what Tuli would do with a message, without posting it           |
+
+### Scam protection
+
+Tuli watches every message and acts on the patterns that hit community servers:
+
+- **Deletes and times out** (then reports to the staff log with Ban / Remove timeout buttons):
+  - links to fake Discord or Steam sites (`dlscord.gift`, `steamcommunlty.com`...)
+  - "free Nitro" / Steam gift bait with a link
+  - `@everyone` with a link from someone who can't ping everyone
+  - the same message posted in 3+ channels within a minute (how hacked accounts spread scams)
+- **Flags for staff** (Delete & time out / Looks fine buttons): "giving away my MacBook / selling tickets, DM me" posts.
+
+Moderators (anyone with Manage Messages) are never checked. People caught get a DM explaining their account may be hacked and how to secure it.
 
 Quote numbers are per server. Tuli won't save the same thing from the same person twice (ignoring capitalization, extra spaces, and quote marks). Commands register automatically when Tuli starts; if they don't appear, reload Discord with Ctrl+R (Cmd+R on Mac).
 
@@ -89,7 +106,7 @@ Quote numbers are per server. Tuli won't save the same thing from the same perso
 - [x] Greet people who mention Tuli
 - [x] Quotes: save quotes and share random ones
 - [x] Daily/weekly custom questions
-- [ ] Moderation (scammer protection)
+- [x] Moderation (scammer protection)
 - [ ] External feeds (ISU opportunities)
 - [x] Currency: points tied to each member's Discord ID
 - [x] Item shop: redeem points for roles and other rewards

@@ -16,6 +16,10 @@ export interface Settings {
   questionPingRoleId: string;
   /** When the scheduler last ran, so it posts once per slot and catches up after downtime. */
   questionLastRunAt: number;
+  /** Whether Tuli deletes likely scams. On unless turned off. */
+  scamProtection: boolean;
+  /** How long to time out someone who posts a scam. 0 = don't time out. */
+  scamTimeoutMinutes: number;
 }
 
 export interface QuestionSchedule {
