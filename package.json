@@ -2,8 +2,8 @@
   "name": "tuli",
   "description": "Community Discord bot",
   "scripts": {
-    "dev": "tsx watch --env-file=.env --disable-warning=ExperimentalWarning src/index.ts",
-    "start": "tsx --env-file=.env --disable-warning=ExperimentalWarning src/index.ts",
+    "dev": "tsx watch --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/index.ts",
+    "start": "tsx --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "DATABASE_PATH=:memory: tsx --disable-warning=ExperimentalWarning --test test/*.test.ts",
     "check": "npm run typecheck && npm test && prettier --check src test",
