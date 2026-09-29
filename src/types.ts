@@ -1,12 +1,13 @@
 import type {
+  APIEmbedField,
   AutocompleteInteraction,
   ChatInputCommandInteraction,
   Client,
-  EmbedBuilder,
   Guild,
   Message,
   MessageComponentInteraction,
   MessageContextMenuCommandInteraction,
+  PermissionsString,
   RESTPostAPIApplicationCommandsJSONBody,
   SlashCommandSubcommandGroupBuilder,
 } from "discord.js";
@@ -64,6 +65,8 @@ export interface Feature {
   onMessage?(message: Message<true>): Promise<typeof STOP | void>;
   /** Runs once when Tuli connects, e.g. to start timers. */
   onReady?(client: Client<true>): void;
-  /** Lines for the /admin setup overview. */
-  describeSettings?(guild: Guild): EmbedBuilder["data"]["fields"];
+  /** Discord permissions this feature needs, and what for (shown in /admin setup overview). */
+  permissions?: Partial<Record<PermissionsString, string>>;
+  /** Fields for the /admin setup overview. */
+  describeSettings?(guild: Guild): APIEmbedField[];
 }

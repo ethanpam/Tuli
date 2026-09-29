@@ -51,6 +51,16 @@ Tuli stores its data in `data/tuli.db` (SQLite, gitignored). Set `DATABASE_PATH`
 | `/quote show number`                    | Show a specific quote                               |
 | `/quote delete number`                  | Delete a quote (the saver, the person quoted, or anyone with Manage Messages) |
 
+### Staff commands
+
+Staff commands live under `/admin`, which only members with **Manage Server** can see. Server owners can change who can use it in **Server Settings → Integrations → Tuli**.
+
+| Command                          | What it does                                                        |
+| -------------------------------- | ------------------------------------------------------------------- |
+| `/admin setup overview`          | See all of Tuli's settings and check that it has the permissions it needs |
+| `/admin setup log-channel`       | Pick a staff-only channel for alerts (scam reports, shop orders, suggestions) |
+| `/admin setup timezone`          | Your server's timezone, for daily resets and question schedules (default: America/Chicago) |
+
 Quote numbers are per server. Tuli won't save the same thing from the same person twice (ignoring capitalization, extra spaces, and quote marks). Commands register automatically when Tuli starts; if they don't appear, reload Discord with Ctrl+R (Cmd+R on Mac).
 
 ## Roadmap

@@ -27,6 +27,14 @@ const migrations = [
     UNIQUE (guild_id, number),
     UNIQUE (guild_id, message_id)
   )`,
+
+  // 2: server settings, one row per setting
+  `CREATE TABLE guild_settings (
+    guild_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,          -- JSON
+    PRIMARY KEY (guild_id, key)
+  )`,
 ];
 
 const { user_version: applied } = db.prepare("PRAGMA user_version").get() as { user_version: number };
