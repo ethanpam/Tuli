@@ -54,7 +54,8 @@ Tuli stores its data in `data/tuli.db` (SQLite, gitignored). Set `DATABASE_PATH`
 | `/points daily`                         | Claim daily points; claiming on consecutive days builds a streak (50 → 100 points) |
 | `/points pay member amount [note]`      | Send some of your points to someone                 |
 | `/points history`                       | Your recent points activity (only you see it)       |
-| `/leaderboard`                          | See who's on top                                    |
+| `/rank [member]`                        | See a level, XP progress, rank and message count    |
+| `/leaderboard [board]`                  | See who's on top by level or points                 |
 
 ### Staff commands
 
@@ -67,6 +68,10 @@ Staff commands live under `/admin`, which only members with **Manage Server** ca
 | `/admin setup timezone`          | Your server's timezone, for daily resets and question schedules (default: America/Chicago) |
 | `/admin points give/take`        | Give or take points with a reason (e.g. for coming to a GBM); logged to the staff channel |
 | `/admin points history`          | See anyone's points activity                                        |
+| `/admin levels reward level role`| Give a role at a level (also given to people already past it)      |
+| `/admin levels remove-reward`, `rewards` | Manage level reward roles                                   |
+| `/admin levels announcements`    | Announce level-ups where they happen, in one channel, or not at all |
+| `/admin levels set member level` | Set someone's level, e.g. to carry it over from another bot         |
 
 Quote numbers are per server. Tuli won't save the same thing from the same person twice (ignoring capitalization, extra spaces, and quote marks). Commands register automatically when Tuli starts; if they don't appear, reload Discord with Ctrl+R (Cmd+R on Mac).
 
@@ -79,4 +84,4 @@ Quote numbers are per server. Tuli won't save the same thing from the same perso
 - [ ] External feeds (ISU opportunities)
 - [x] Currency: points tied to each member's Discord ID
 - [ ] Item shop: redeem points for roles and other rewards
-- [ ] Levels: XP from chatting, roles at XP milestones
+- [x] Levels: XP from chatting, roles at XP milestones

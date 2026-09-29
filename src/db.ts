@@ -56,6 +56,19 @@ const migrations = [
     created_at INTEGER NOT NULL
   );
   CREATE INDEX point_transactions_by_member ON point_transactions (guild_id, user_id, id)`,
+
+  // 4: levels. XP comes from chatting; reward roles are handed out at certain levels.
+  `ALTER TABLE members ADD COLUMN xp INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE members ADD COLUMN level INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE members ADD COLUMN message_count INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE members ADD COLUMN last_xp_at INTEGER NOT NULL DEFAULT 0;
+  CREATE INDEX members_by_xp ON members (guild_id, xp);
+  CREATE TABLE level_rewards (
+    guild_id TEXT NOT NULL,
+    level INTEGER NOT NULL,
+    role_id TEXT NOT NULL,
+    PRIMARY KEY (guild_id, role_id)
+  )`,
 ];
 
 const { user_version: applied } = db.prepare("PRAGMA user_version").get() as { user_version: number };

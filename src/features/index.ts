@@ -4,6 +4,7 @@ import { economyFeature, pointsBoard } from "./economy/index.js";
 import { greetFeature } from "./greet.js";
 import { helpFeature } from "./help.js";
 import { createLeaderboardFeature } from "./leaderboard.js";
+import { levelsBoard, levelsFeature } from "./levels/index.js";
 import { quotesFeature } from "./quotes/index.js";
 import { createSetupFeature } from "./setup.js";
 
@@ -14,7 +15,8 @@ const baseFeatures: Feature[] = [
   greetFeature,
   quotesFeature,
   economyFeature,
-  createLeaderboardFeature([pointsBoard]),
+  levelsFeature,
+  createLeaderboardFeature([levelsBoard, pointsBoard]),
 ];
 
 const adminGroups = baseFeatures.flatMap((feature) => (feature.admin ? [feature.admin] : []));

@@ -6,6 +6,8 @@ export interface Settings {
   logChannelId: string;
   /** IANA name like "America/Chicago". Used for daily resets and question schedules. */
   timezone: string;
+  /** Where level-ups are announced: "here" (the channel they leveled up in), "off", or a channel ID. */
+  levelUpChannel: "here" | "off" | (string & {});
 }
 
 export const DEFAULT_TIMEZONE = "America/Chicago";
