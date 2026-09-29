@@ -35,6 +35,27 @@ const migrations = [
     value TEXT NOT NULL,          -- JSON
     PRIMARY KEY (guild_id, key)
   )`,
+
+  // 3: points. Every change is recorded in point_transactions so balances can be audited.
+  `CREATE TABLE members (
+    guild_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    display_name TEXT,            -- last known name, for leaderboards
+    points INTEGER NOT NULL DEFAULT 0,
+    daily_streak INTEGER NOT NULL DEFAULT 0,
+    last_daily TEXT,              -- YYYY-MM-DD in the server's timezone
+    PRIMARY KEY (guild_id, user_id)
+  );
+  CREATE TABLE point_transactions (
+    id INTEGER PRIMARY KEY,
+    guild_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    amount INTEGER NOT NULL,      -- positive = earned, negative = spent
+    reason TEXT NOT NULL,
+    actor_id TEXT,                -- who caused it, e.g. the admin who gave points
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX point_transactions_by_member ON point_transactions (guild_id, user_id, id)`,
 ];
 
 const { user_version: applied } = db.prepare("PRAGMA user_version").get() as { user_version: number };

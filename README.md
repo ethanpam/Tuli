@@ -50,6 +50,11 @@ Tuli stores its data in `data/tuli.db` (SQLite, gitignored). Set `DATABASE_PATH`
 | `/quote list [by]`                      | Browse all quotes, 10 per page (only you see it)    |
 | `/quote show number`                    | Show a specific quote                               |
 | `/quote delete number`                  | Delete a quote (the saver, the person quoted, or anyone with Manage Messages) |
+| `/points balance [member]`              | See a points balance, rank and daily streak         |
+| `/points daily`                         | Claim daily points; claiming on consecutive days builds a streak (50 → 100 points) |
+| `/points pay member amount [note]`      | Send some of your points to someone                 |
+| `/points history`                       | Your recent points activity (only you see it)       |
+| `/leaderboard`                          | See who's on top                                    |
 
 ### Staff commands
 
@@ -60,6 +65,8 @@ Staff commands live under `/admin`, which only members with **Manage Server** ca
 | `/admin setup overview`          | See all of Tuli's settings and check that it has the permissions it needs |
 | `/admin setup log-channel`       | Pick a staff-only channel for alerts (scam reports, shop orders, suggestions) |
 | `/admin setup timezone`          | Your server's timezone, for daily resets and question schedules (default: America/Chicago) |
+| `/admin points give/take`        | Give or take points with a reason (e.g. for coming to a GBM); logged to the staff channel |
+| `/admin points history`          | See anyone's points activity                                        |
 
 Quote numbers are per server. Tuli won't save the same thing from the same person twice (ignoring capitalization, extra spaces, and quote marks). Commands register automatically when Tuli starts; if they don't appear, reload Discord with Ctrl+R (Cmd+R on Mac).
 
@@ -70,6 +77,6 @@ Quote numbers are per server. Tuli won't save the same thing from the same perso
 - [ ] Daily/weekly custom questions
 - [ ] Moderation (scammer protection)
 - [ ] External feeds (ISU opportunities)
-- [ ] Currency: points tied to each member's Discord ID
+- [x] Currency: points tied to each member's Discord ID
 - [ ] Item shop: redeem points for roles and other rewards
 - [ ] Levels: XP from chatting, roles at XP milestones
