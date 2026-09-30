@@ -1,5 +1,16 @@
 <p align="center">
-  <img src="docs/images/banner.png" alt="Tuli: the friendly Discord bot for our ISU community" width="100%">
+  <img src="docs/images/banner.png" alt="Three Tulis, white bunnies with red bows, tumbling among yellow stars" width="100%">
+</p>
+
+<p align="center">
+  <img src="docs/images/tuli-avatar.png" alt="Tuli, a white bunny with a red bow and glasses, giving a thumbs up" width="150">
+</p>
+
+<h1 align="center">Tuli</h1>
+
+<p align="center">
+  <b>The friendly Discord bot for our ISU community</b><br>
+  Quotes, points, levels, a shop, daily questions and trivia, scam protection, and ISU news.
 </p>
 
 <p align="center">
@@ -7,11 +18,6 @@
   <img alt="discord.js v14" src="https://img.shields.io/badge/discord.js-v14-5865F2?logo=discord&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/database-SQLite-003B57?logo=sqlite&logoColor=white">
-</p>
-
-<p align="center">
-  <b>Tuli</b> keeps our Discord server fun, safe and in the loop:<br>
-  quotes, points, levels, a shop, daily questions and trivia, scam protection, and ISU news.
 </p>
 
 <p align="center">
@@ -71,7 +77,7 @@ Setting Tuli up takes about 15 minutes. You'll need:
    - Click **Reset Token** and copy the token. **Treat it like a password.** Anyone who has it can control your bot.
    - Turn off **Public Bot**, so only you can add Tuli to servers.
    - Under **Privileged Gateway Intents**, turn on **Message Content Intent**. Scam protection needs it to read messages.
-   - Optional: set the bot's icon to <img src="docs/images/tuli-avatar.png" width="20" alt=""> [`docs/images/tuli-avatar.png`](docs/images/tuli-avatar.png).
+   - Give Tuli its look: upload [`assets/profile-pic.png`](assets/profile-pic.png) as the **Icon** and [`assets/banner.png`](assets/banner.png) as the **Banner**. Discord lets you crop them.
 
 ### Step 2: Download and run Tuli
 
@@ -507,6 +513,7 @@ src/
     index.ts        The list of features
     <feature>/      store.ts (database) and index.ts (commands and screens)
 test/               Tests, including end-to-end ones against a pretend Discord server
+assets/             Tuli's artwork: profile picture and banner (full size)
 docs/tools/         The script that draws this guide's pictures
 ```
 
@@ -529,4 +536,4 @@ docs/tools/         The script that draws this guide's pictures
 
 ### Updating the pictures
 
-The screenshots and animations in `docs/images` come from `npm run docs:images`. It runs Tuli's real commands against an example server (`docs/tools/scenes.ts`), draws each channel the way Discord's dark theme shows it, and saves PNGs and GIFs with Chrome. It needs Google Chrome installed; set `CHROME_PATH` if Chrome isn't in the usual place. Run it after changing how anything looks, and commit the new images.
+The pictures in `docs/images` come from `npm run docs:images`. It makes README-sized copies of Tuli's artwork in `assets/` (the banner and round avatar), and uses the profile picture as Tuli's avatar in the screenshots. For the screenshots, it runs Tuli's real commands against an example server (`docs/tools/scenes.ts`), draws each channel the way Discord's dark theme shows it, and saves PNGs and GIFs with Chrome. It needs Google Chrome installed; set `CHROME_PATH` if Chrome isn't in the usual place. Run it after changing how anything looks, and commit the new images.

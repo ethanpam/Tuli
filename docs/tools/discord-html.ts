@@ -247,6 +247,8 @@ const STYLES = `
     font-family: "Noto Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.375;
     box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 18px 50px rgba(0,0,0,.35); display: flex; flex-direction: column; }
   .flat .stage { padding: 0; } .flat .window { border-radius: 0; box-shadow: none; }
+  /* Animation frames share one height; start at the top so new messages appear below. */
+  .flat .messages { justify-content: flex-start; }
   .bar { height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid #26272b; }
   .bar .hash { color: #80848e; font-size: 24px; font-weight: 400; }
   .bar .title { color: #f2f3f5; font-weight: 600; }

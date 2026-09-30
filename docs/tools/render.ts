@@ -6,7 +6,7 @@ import { join } from "node:path";
 import gifenc from "gifenc";
 import { PNG } from "pngjs";
 import puppeteer, { type Page } from "puppeteer-core";
-import { avatarPage, bannerPage } from "./brand.js";
+import { asset, framePage } from "./brand.js";
 import { shotPage } from "./discord-html.js";
 import { buildScenes } from "./scenes.js";
 
@@ -40,24 +40,29 @@ function save(name: string, data: Buffer | Uint8Array) {
   console.log(`  docs/images/${name} (${Math.round(data.length / 1024)} KB)`);
 }
 
-// Tuli reports handler errors with console.error; any error means a picture would be wrong.
-const errors: unknown[][] = [];
-const logError = console.error;
-console.error = (...args: unknown[]) => void errors.push(args);
-const { shots, animations, directory } = await buildScenes();
-console.error = logError;
-if (errors.length) {
-  for (const args of errors) logError(...args);
-  throw new Error(`${errors.length} errors while running the scenes; no images were written.`);
-}
 mkdirSync(OUT, { recursive: true });
 if (!CHROME) throw new Error("Set CHROME_PATH to your Chrome or Chromium executable.");
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true });
 const page = await browser.newPage();
 
-console.log("Brand:");
-save("banner.png", await capture(page, bannerPage(), 2));
-save("tuli-avatar.png", await capture(page, avatarPage(), 1));
+// README-sized copies of Tuli's artwork in assets/ (the originals are too big for a web page).
+console.log("Artwork:");
+const profilePicture = asset("profile-pic.png");
+save("banner.png", await capture(page, framePage(asset("banner.png"), 1600, 800, "28px"), 1));
+save("tuli-avatar.png", await capture(page, framePage(profilePicture, 512, 512, "50%"), 1));
+const smallAvatar = await capture(page, framePage(profilePicture, 160, 160, "50%"), 1);
+
+// Tuli reports handler errors with console.error; any error means a picture would be wrong.
+const errors: unknown[][] = [];
+const logError = console.error;
+console.error = (...args: unknown[]) => void errors.push(args);
+const { shots, animations, directory } = await buildScenes(`data:image/png;base64,${smallAvatar.toString("base64")}`);
+console.error = logError;
+if (errors.length) {
+  for (const args of errors) logError(...args);
+  await browser.close();
+  throw new Error(`${errors.length} errors while running the scenes; no screenshots were written.`);
+}
 
 console.log("Screenshots:");
 const names: Record<string, string> = {
@@ -84,7 +89,7 @@ for (const [key, shot] of Object.entries(shots)) {
 
 console.log("Animations:");
 for (const animation of animations) {
-  // Every frame gets the same height, with messages anchored to the bottom like a real chat.
+  // Every frame gets the same height, so the GIF doesn't jump around.
   let height = 0;
   for (const frame of animation.frames)
     height = Math.max(height, await measureHeight(page, shotPage(frame.shot, directory, { flat: true })));

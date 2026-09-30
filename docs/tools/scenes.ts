@@ -11,7 +11,7 @@ import { addQuote } from "../../src/features/quotes/store.js";
 import { addItem } from "../../src/features/shop/store.js";
 import { DEFAULT_TIMEZONE, setSetting } from "../../src/settings.js";
 import { localDate, previousDate } from "../../src/time.js";
-import { initialAvatar, LOGO_DATA_URI } from "./brand.js";
+import { initialAvatar } from "./brand.js";
 import { freezeTime } from "./clock.js";
 import type { Directory, Shot } from "./discord-html.js";
 import { World, type ChatMessage, type Person } from "../../test/support/fake-discord.js";
@@ -31,10 +31,11 @@ function person(name: string, color: string, extra: Partial<Person> = {}): Perso
   return { id, name, color: "#f2f3f5", avatar: initialAvatar(name, color), ...extra };
 }
 
-export async function buildScenes() {
+/** `tuliAvatar` is Tuli's profile picture (a small image URL) to show on its messages. */
+export async function buildScenes(tuliAvatar: string) {
   // A Tuesday at 9:05 AM in Ames, just after the morning question goes out.
   const clock = freezeTime("2026-10-06T14:05:00Z");
-  const tuli: Person = { id: "tuli", name: "Tuli", color: "#f2f3f5", avatar: LOGO_DATA_URI, bot: true };
+  const tuli: Person = { id: "tuli", name: "Tuli", color: "#f2f3f5", avatar: tuliAvatar, bot: true };
   const world = new World(tuli, "ISU Community", features);
 
   const alex = world.addPerson(person("Alex", "#e67e22"));
@@ -232,14 +233,14 @@ export async function buildScenes() {
   clock.advance(47 * 60_000);
   await world.say(sam, "general", "does anyone have notes from Tuesday's lecture?");
   await world.say(crowd[1]!, "general", "yeah I'll send them after class");
-  const scamFrames: Animation["frames"] = [{ shot: shot("general", 3), delay: 1600 }];
+  const scamFrames: Animation["frames"] = [{ shot: shot("general", 2), delay: 1600 }];
   const scam = world.post("general", riley, {
     content:
       "@everyone Free Discord Nitro for everyone 🎁 claim it before it's gone → https://dlscord.gift/nitro-claim",
   });
   scamFrames.push({ shot: shot("general", 3), delay: 2400 });
   await world.deliver(scam);
-  scamFrames.push({ shot: shot("general", 3), delay: 1400 }, { shot: shot("staff-log", 1), delay: 4200 });
+  scamFrames.push({ shot: shot("general", 2), delay: 1400 }, { shot: shot("staff-log", 1), delay: 4200 });
   animations.push({ name: "scam", frames: scamFrames });
   shots.scam = shot("staff-log", 1);
   shots.scamDm = shot("dm-riley", 1);
