@@ -156,6 +156,20 @@ const migrations = [
   ALTER TABLE questions ADD COLUMN answer INTEGER;                    -- index of the right answer; NULL = a poll
   ALTER TABLE questions ADD COLUMN closed_at INTEGER;                 -- when the results were revealed
   ALTER TABLE question_answers ADD COLUMN choice INTEGER`, // which button they picked
+
+  // 10: upcoming events (GBMs, socials...), which Tuli can also tell people about
+  `CREATE TABLE events (
+    id INTEGER PRIMARY KEY,
+    guild_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    starts_at INTEGER NOT NULL,         -- ms since 1970
+    location TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    link TEXT NOT NULL DEFAULT '',      -- e.g. an RSVP form
+    created_by TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX events_by_start ON events (guild_id, starts_at)`,
 ];
 
 const { user_version: applied } = db.prepare("PRAGMA user_version").get() as { user_version: number };
