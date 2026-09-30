@@ -149,6 +149,13 @@ const migrations = [
     seen_at INTEGER NOT NULL,
     PRIMARY KEY (feed_id, item_key)
   )`,
+
+  // 9: multiple-choice and true/false questions
+  `ALTER TABLE questions ADD COLUMN kind TEXT NOT NULL DEFAULT 'open';  -- 'open', 'choice' or 'truefalse'
+  ALTER TABLE questions ADD COLUMN choices TEXT;                      -- JSON list of answers to pick from
+  ALTER TABLE questions ADD COLUMN answer INTEGER;                    -- index of the right answer; NULL = a poll
+  ALTER TABLE questions ADD COLUMN closed_at INTEGER;                 -- when the results were revealed
+  ALTER TABLE question_answers ADD COLUMN choice INTEGER`, // which button they picked
 ];
 
 const { user_version: applied } = db.prepare("PRAGMA user_version").get() as { user_version: number };

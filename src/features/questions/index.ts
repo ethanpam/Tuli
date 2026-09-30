@@ -13,6 +13,7 @@ import {
   time,
   TimestampStyles,
   type Client,
+  type EmbedBuilder,
   type Guild,
   type GuildTextBasedChannel,
 } from "discord.js";
@@ -20,13 +21,17 @@ import { getSetting, getTimezone, guildsWithSetting, setSetting, type QuestionSc
 import { sendStaffLog } from "../../staff-log.js";
 import { hourLabel, WEEKDAYS } from "../../time.js";
 import type { AdminGroup, ComponentHandler, Feature, SlashCommand } from "../../types.js";
-import { Colors, embed, formatPoints, notice, oneLine, plural, replyNotice, truncate } from "../../ui.js";
+import { Colors, embed, formatPoints, notice, oneLine, plural, progressBar, replyNotice, truncate } from "../../ui.js";
 import { changePoints } from "../economy/store.js";
 import { describeSchedule, isDue, nextPostAt, questionLabel } from "./schedule.js";
 import {
   addQuestion,
+  ANSWER_POINTS,
+  answerOf,
   approveSuggestion,
+  choiceCounts,
   claimNextQuestion,
+  closeQuestion,
   countByStatus,
   findWaitingDuplicate,
   getQuestion,
@@ -37,14 +42,19 @@ import {
   recordPost,
   rejectSuggestion,
   removeQuestion,
+  TRUE_FALSE,
   unclaimQuestion,
+  unclosedQuestions,
   type Question,
+  type QuestionFormat,
 } from "./store.js";
 
-export const ANSWER_POINTS = 10;
 const MAX_QUESTION_LENGTH = 300;
+const MAX_CHOICE_LENGTH = 100;
 const CHECK_EVERY_MS = 30_000;
 const LOW_QUEUE_WARNING = 2;
+const LETTERS = ["A", "B", "C", "D", "E"];
+const LETTER_EMOJI = ["🇦", "🇧", "🇨", "🇩", "🇪"];
 
 // Permissions Tuli needs in the question channel.
 const CHANNEL_PERMISSIONS = [
@@ -61,9 +71,119 @@ function questionChannel(guild: Guild): GuildTextBasedChannel | null {
   return channel?.isTextBased() && !channel.isThread() && !channel.isVoiceBased() ? channel : null;
 }
 
+// ─── How questions look ──────────────────────────────────────────────────────
+
+/** "B. Pizza" for multiple choice, "True" for true/false. */
+function choiceName(question: Question, index: number): string {
+  const choice = question.choices[index] ?? "?";
+  return question.kind === "truefalse" ? choice : `${LETTERS[index]}. ${choice}`;
+}
+
+/** "multiple choice", "poll", "true/false", or "" for open questions. */
+function kindLabel(question: QuestionFormat): string {
+  if (question.kind === "truefalse") return "true/false";
+  if (question.kind === "choice") return question.answer === null ? "poll" : "multiple choice";
+  return "";
+}
+
+function choiceList(question: Question): string {
+  if (question.kind === "truefalse") return "**True or false?**";
+  return question.choices.map((choice, index) => `${LETTER_EMOJI[index]} ${choice}`).join("\n");
+}
+
+/** The post for a new question: open questions get a thread, the others get answer buttons. */
+export function questionMessage(question: Question, label: string, iconURL?: string) {
+  const post = embed().setAuthor({ name: label, iconURL });
+  if (question.kind === "open") {
+    post
+      .setDescription(`## ${question.text}`)
+      .setFooter({ text: `Answer in the thread below · your first answer earns ${ANSWER_POINTS} points` });
+    return { embeds: [post], components: [] };
+  }
+  post.setDescription(`## ${question.text}\n\n${choiceList(question)}`).setFooter({
+    text:
+      question.answer === null
+        ? `Vote below · voting earns ${ANSWER_POINTS} points · results when this closes`
+        : `Pick an answer below · the right one earns ${ANSWER_POINTS} points when the answer is revealed`,
+  });
+  const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    question.choices.map((_, index) =>
+      new ButtonBuilder()
+        .setCustomId(`question-answer:${question.id}:${index}`)
+        .setLabel(truncate(choiceName(question, index), 80))
+        .setStyle(ButtonStyle.Primary),
+    ),
+  );
+  return { embeds: [post], components: [buttons] };
+}
+
+/** The same post once it closes: how many picked each choice, and the right answer. */
+export function resultsEmbed(question: Question, label: string, counts: number[], winners: number): EmbedBuilder {
+  const total = counts.reduce((sum, count) => sum + count, 0);
+  const lines = question.choices.map((choice, index) => {
+    const count = counts[index] ?? 0;
+    const share = total ? count / total : 0;
+    const prefix = question.kind === "truefalse" ? "" : `${LETTER_EMOJI[index]} `;
+    const right = question.answer === index ? " ✅" : "";
+    return `${prefix}**${choice}**${right}\n${progressBar(share, 10)} ${Math.round(share * 100)}% · ${count}`;
+  });
+  const summary =
+    question.answer === null
+      ? `Closed · ${plural(total, "vote")}`
+      : `Closed · ${plural(total, "answer")} · ${plural(winners, "person", "people")} got it right`;
+  return embed(question.answer === null ? Colors.brand : Colors.success)
+    .setAuthor({ name: label })
+    .setDescription(`## ${question.text}\n\n${lines.join("\n")}`)
+    .setFooter({ text: summary });
+}
+
+/** A short announcement under the post, since editing a message doesn't notify anyone. */
+function resultsAnnouncement(question: Question, counts: number[], winners: number): string {
+  if (question.answer !== null) {
+    const who = winners
+      ? `${plural(winners, "person", "people")} got it right and earned ${formatPoints(ANSWER_POINTS)}!`
+      : "Nobody got it this time!";
+    return `📊 The answer was **${choiceName(question, question.answer)}**. ${who}`;
+  }
+  const top = Math.max(...counts);
+  if (top === 0) return "📊 Voting is closed. Nobody voted this time.";
+  const leaders = question.choices.flatMap((_, index) =>
+    counts[index] === top ? [`**${choiceName(question, index)}**`] : [],
+  );
+  return leaders.length === 1
+    ? `📊 Voting is closed. ${leaders[0]} won!`
+    : `📊 Voting is closed. It's a tie: ${leaders.join(" and ")}.`;
+}
+
+// ─── Posting and closing ─────────────────────────────────────────────────────
+
+/** Reveals the results of open button questions and pays out trivia winners. */
+async function closeButtonQuestions(guild: Guild): Promise<Question[]> {
+  const closed: Question[] = [];
+  for (const question of unclosedQuestions(guild.id)) {
+    const result = closeQuestion(question);
+    if (!result) continue; // someone else closed it at the same moment
+    closed.push(question);
+
+    const channel = question.channel_id ? guild.channels.cache.get(question.channel_id) : undefined;
+    if (!channel?.isTextBased() || !question.message_id) continue;
+    const message = await channel.messages.fetch(question.message_id).catch(() => null);
+    if (!message) continue;
+    const counts = choiceCounts(question);
+    const label = message.embeds[0]?.author?.name ?? `Question #${question.number}`;
+    await message
+      .edit({ embeds: [resultsEmbed(question, label, counts, result.winners.length)], components: [] })
+      .catch(() => {});
+    await message
+      .reply({ content: resultsAnnouncement(question, counts, result.winners.length), allowedMentions: { parse: [] } })
+      .catch(() => {});
+  }
+  return closed;
+}
+
 /**
- * Posts the next queued question with an answer thread. Returns the question, or an
- * explanation of why nothing was posted.
+ * Closes the previous button question, then posts the next queued question. Returns the
+ * question, or an explanation of why nothing was posted.
  */
 async function postNextQuestion(guild: Guild): Promise<{ question: Question } | { problem: string }> {
   const channel = questionChannel(guild);
@@ -75,28 +195,28 @@ async function postNextQuestion(guild: Guild): Promise<{ question: Question } | 
   }
   const question = claimNextQuestion(guild.id);
   if (!question) return { problem: "The question queue is empty. Add some with `/admin questions add`." };
+  await closeButtonQuestions(guild);
 
   const schedule = getSetting(guild.id, "questionSchedule");
   const label = `${questionLabel(schedule)} #${question.number}`;
   const pingRoleId = getSetting(guild.id, "questionPingRoleId");
-  const post = embed()
-    .setAuthor({ name: label, iconURL: guild.iconURL() ?? undefined })
-    .setDescription(`## ${question.text}`)
-    .setFooter({ text: `Answer in the thread below · your first answer earns ${ANSWER_POINTS} points` });
 
   try {
     const message = await channel.send({
       content: pingRoleId ? `<@&${pingRoleId}>` : undefined,
-      embeds: [post],
+      ...questionMessage(question, label, guild.iconURL() ?? undefined),
       allowedMentions: { roles: pingRoleId ? [pingRoleId] : [] },
     });
-    const thread = await message
-      .startThread({
-        name: truncate(`💬 ${label}: ${oneLine(question.text)}`, 100),
-        autoArchiveDuration:
-          schedule?.frequency === "weekly" ? ThreadAutoArchiveDuration.OneWeek : ThreadAutoArchiveDuration.OneDay,
-      })
-      .catch(() => null);
+    const thread =
+      question.kind === "open"
+        ? await message
+            .startThread({
+              name: truncate(`💬 ${label}: ${oneLine(question.text)}`, 100),
+              autoArchiveDuration:
+                schedule?.frequency === "weekly" ? ThreadAutoArchiveDuration.OneWeek : ThreadAutoArchiveDuration.OneDay,
+            })
+            .catch(() => null)
+        : null;
     recordPost(question.id, channel.id, message.id, thread?.id ?? null);
   } catch (error) {
     unclaimQuestion(question.id);
@@ -151,6 +271,8 @@ function startScheduler(client: Client<true>) {
   void tick();
 }
 
+// ─── What members use ────────────────────────────────────────────────────────
+
 function reviewButtons(questionId: number) {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
@@ -190,11 +312,15 @@ const questionCommand: SlashCommand = {
       const where = question.thread_id
         ? `<#${question.thread_id}>`
         : `[the post](${messageLink(question.channel_id, question.message_id, guild.id)})`;
+      const next =
+        question.kind === "open"
+          ? `Answer in ${where} · your first answer earns ${formatPoints(ANSWER_POINTS)}`
+          : question.closed_at
+            ? `This one is closed. See the results on ${where}.`
+            : `${choiceList(question)}\n\nAnswer with the buttons on ${where}`;
       const card = embed()
         .setAuthor({ name: `${questionLabel(getSetting(guild.id, "questionSchedule"))} #${question.number}` })
-        .setDescription(
-          `## ${question.text}\nAnswer in ${where} · your first answer earns ${formatPoints(ANSWER_POINTS)}`,
-        )
+        .setDescription(`## ${question.text}\n${next}`)
         .setTimestamp(question.posted_at);
       await interaction.reply({ embeds: [card], flags: MessageFlags.Ephemeral });
       return;
@@ -226,6 +352,50 @@ const questionCommand: SlashCommand = {
       return;
     }
     await replyNotice(interaction, "success", "Thanks! Your question was sent to the staff to review.");
+  },
+};
+
+/** A member clicking an answer button. Answers lock in; trivia points are paid when the answer is revealed. */
+const answerHandler: ComponentHandler = {
+  prefix: "question-answer",
+  async execute(interaction, [id = "0", choiceArg = "0"]) {
+    const question = getQuestion(interaction.guildId, Number(id));
+    const choice = Number(choiceArg);
+    if (!question || question.kind === "open" || question.closed_at !== null || !question.choices[choice]) {
+      await replyNotice(interaction, "info", "This question is closed. Check the post for the results.");
+      return;
+    }
+    if (!recordAnswer(question.id, interaction.user.id, choice)) {
+      const previous = answerOf(question.id, interaction.user.id) ?? choice;
+      await replyNotice(
+        interaction,
+        "info",
+        `You already picked **${choiceName(question, previous)}**. Answers can't be changed.`,
+      );
+      return;
+    }
+
+    const picked = choiceName(question, choice);
+    if (question.answer === null) {
+      changePoints({
+        guildId: interaction.guildId,
+        userId: interaction.user.id,
+        amount: ANSWER_POINTS,
+        reason: `Voted on question #${question.number}`,
+        displayName: interaction.member.displayName,
+      });
+      await replyNotice(
+        interaction,
+        "success",
+        `You voted for **${picked}**. +${formatPoints(ANSWER_POINTS)}\nThe results are shown when the question closes.`,
+      );
+    } else {
+      await replyNotice(
+        interaction,
+        "success",
+        `🔒 Locked in: **${picked}**. If it's right, you'll get ${formatPoints(ANSWER_POINTS)} when the answer is revealed.`,
+      );
+    }
   },
 };
 
@@ -268,8 +438,25 @@ const reviewHandler: ComponentHandler = {
   },
 };
 
+// ─── What staff use ──────────────────────────────────────────────────────────
+
 const HOURS = Array.from({ length: 24 }, (_, hour) => ({ name: hourLabel(hour), value: hour }));
 const WEEKDAY_CHOICES = WEEKDAYS.map((name, value) => ({ name, value }));
+const ANSWER_CHOICES = LETTERS.map((letter, value) => ({ name: letter, value }));
+
+/** Reads the A–E choices of /admin questions add-choice, or explains what's wrong with them. */
+export function readChoices(get: (name: string) => string | null): { choices: string[] } | { problem: string } {
+  const slots = LETTERS.map((letter) => get(`choice-${letter.toLowerCase()}`)?.trim() || null);
+  const lastFilled = slots.findLastIndex((slot) => slot !== null);
+  const choices = slots.slice(0, lastFilled + 1);
+  if (choices.some((choice) => choice === null))
+    return { problem: "Fill in the choices in order (A, B, C...) without gaps." };
+  const filled = choices as string[];
+  if (new Set(filled.map((choice) => choice.toLowerCase())).size !== filled.length) {
+    return { problem: "Each choice has to be different." };
+  }
+  return { choices: filled };
+}
 
 const questionsAdmin: AdminGroup = {
   name: "questions",
@@ -306,10 +493,39 @@ const questionsAdmin: AdminGroup = {
       .addSubcommand((sub) =>
         sub
           .setName("add")
-          .setDescription("Add a question to the queue")
+          .setDescription("Add an open question, answered in a thread")
           .addStringOption((o) =>
             o.setName("question").setDescription("The question").setRequired(true).setMaxLength(MAX_QUESTION_LENGTH),
           ),
+      )
+      .addSubcommand((sub) => {
+        sub
+          .setName("add-choice")
+          .setDescription("Add a multiple-choice question, or a poll")
+          .addStringOption((o) =>
+            o.setName("question").setDescription("The question").setRequired(true).setMaxLength(MAX_QUESTION_LENGTH),
+          );
+        LETTERS.forEach((letter, index) =>
+          sub.addStringOption((o) =>
+            o
+              .setName(`choice-${letter.toLowerCase()}`)
+              .setDescription(`Choice ${letter}`)
+              .setRequired(index < 2)
+              .setMaxLength(MAX_CHOICE_LENGTH),
+          ),
+        );
+        return sub.addIntegerOption((o) =>
+          o.setName("answer").setDescription("The right answer (leave empty for a poll)").addChoices(ANSWER_CHOICES),
+        );
+      })
+      .addSubcommand((sub) =>
+        sub
+          .setName("add-truefalse")
+          .setDescription("Add a true/false question")
+          .addStringOption((o) =>
+            o.setName("statement").setDescription("The statement").setRequired(true).setMaxLength(MAX_QUESTION_LENGTH),
+          )
+          .addBooleanOption((o) => o.setName("answer").setDescription("Is it true?").setRequired(true)),
       )
       .addSubcommand((sub) => sub.setName("queue").setDescription("See the questions waiting to be posted"))
       .addSubcommand((sub) =>
@@ -320,11 +536,54 @@ const questionsAdmin: AdminGroup = {
             o.setName("id").setDescription("The ID shown in /admin questions queue").setRequired(true).setMinValue(1),
           ),
       )
-      .addSubcommand((sub) => sub.setName("post-now").setDescription("Post the next question right away")),
+      .addSubcommand((sub) => sub.setName("post-now").setDescription("Post the next question right away"))
+      .addSubcommand((sub) => sub.setName("close").setDescription("Reveal answers and results of button questions")),
 
   async execute(interaction) {
     const { guild } = interaction;
-    switch (interaction.options.getSubcommand()) {
+    const subcommand = interaction.options.getSubcommand();
+
+    if (subcommand === "add" || subcommand === "add-choice" || subcommand === "add-truefalse") {
+      const text = interaction.options.getString(subcommand === "add-truefalse" ? "statement" : "question", true);
+      let format: QuestionFormat = { kind: "open", choices: [], answer: null };
+      if (subcommand === "add-choice") {
+        const read = readChoices((name) => interaction.options.getString(name));
+        if ("problem" in read) {
+          await replyNotice(interaction, "error", read.problem);
+          return;
+        }
+        const answer = interaction.options.getInteger("answer");
+        if (answer !== null && answer >= read.choices.length) {
+          await replyNotice(interaction, "error", `There's no choice ${LETTERS[answer]}.`);
+          return;
+        }
+        format = { kind: "choice", choices: read.choices, answer };
+      } else if (subcommand === "add-truefalse") {
+        format = {
+          kind: "truefalse",
+          choices: TRUE_FALSE,
+          answer: interaction.options.getBoolean("answer", true) ? 0 : 1,
+        };
+      }
+
+      const duplicate = findWaitingDuplicate(guild.id, text);
+      if (duplicate) {
+        await replyNotice(interaction, "info", `That question is already waiting (ID ${duplicate.id}).`);
+        return;
+      }
+      const question = addQuestion(guild.id, text, interaction.user.id, "queued", format);
+      const position = countByStatus(guild.id, "queued");
+      const kind = kindLabel(question);
+      const answer = question.answer === null ? "" : `\nRight answer: **${choiceName(question, question.answer)}**`;
+      await replyNotice(
+        interaction,
+        "success",
+        `Added ${kind ? `${kind} ` : ""}question ${question.id}. It's number ${position} in the queue.${answer}`,
+      );
+      return;
+    }
+
+    switch (subcommand) {
       case "schedule": {
         const channel = interaction.options.getChannel("channel", true, [
           ChannelType.GuildText,
@@ -386,32 +645,15 @@ const questionsAdmin: AdminGroup = {
         return;
       }
 
-      case "add": {
-        const text = interaction.options.getString("question", true);
-        const duplicate = findWaitingDuplicate(guild.id, text);
-        if (duplicate) {
-          await replyNotice(interaction, "info", `That question is already waiting (ID ${duplicate.id}).`);
-          return;
-        }
-        const question = addQuestion(guild.id, text, interaction.user.id, "queued");
-        const position = countByStatus(guild.id, "queued");
-        await replyNotice(
-          interaction,
-          "success",
-          `Added question ${question.id}. It's number ${position} in the queue.`,
-        );
-        return;
-      }
-
       case "queue": {
         const queued = listByStatus(guild.id, "queued", 20);
         const total = countByStatus(guild.id, "queued");
         const suggestions = countByStatus(guild.id, "suggested");
         const schedule = getSetting(guild.id, "questionSchedule");
-        const lines = queued.map(
-          (question, index) =>
-            `**${index + 1}.** ${escapeMarkdown(truncate(oneLine(question.text), 90))} \`ID ${question.id}\``,
-        );
+        const lines = queued.map((question, index) => {
+          const kind = kindLabel(question);
+          return `**${index + 1}.** ${escapeMarkdown(truncate(oneLine(question.text), 90))} \`ID ${question.id}\`${kind ? ` · ${kind}` : ""}`;
+        });
         const list = embed()
           .setTitle(`❓ Question queue (${total})`)
           .setDescription(lines.join("\n") || "The queue is empty. Add questions with `/admin questions add`.")
@@ -446,6 +688,19 @@ const questionsAdmin: AdminGroup = {
         else await replyNotice(interaction, "success", `Posted question #${result.question.number}.`);
         return;
       }
+
+      case "close": {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const closed = await closeButtonQuestions(guild);
+        await replyNotice(
+          interaction,
+          closed.length ? "success" : "info",
+          closed.length
+            ? `Revealed the results of question ${closed.map((question) => `#${question.number}`).join(", ")}.`
+            : "There are no multiple-choice or true/false questions waiting for results.",
+        );
+        return;
+      }
     }
   },
 };
@@ -453,7 +708,7 @@ const questionsAdmin: AdminGroup = {
 export const questionsFeature: Feature = {
   name: "Questions",
   slashCommands: [questionCommand],
-  components: [reviewHandler],
+  components: [answerHandler, reviewHandler],
   admin: questionsAdmin,
   permissions: {
     CreatePublicThreads: "open an answer thread for each question",

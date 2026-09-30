@@ -97,22 +97,23 @@ Do these once, in order:
 
 Everything under `/admin` is hidden from other members. Server owners can change who can use it in **Server Settings → Integrations → Tuli**.
 
-| Command                                                  | What it does                                                                 |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `/admin setup overview`                                  | See every setting and check Tuli's permissions                               |
-| `/admin setup log-channel`                               | Where staff alerts go                                                        |
-| `/admin setup timezone`                                  | The server's timezone (default: America/Chicago)                             |
-| `/admin points give` / `take`                            | Give or take points with a reason, logged to the staff channel               |
-| `/admin points history`                                  | See anyone's points activity                                                 |
-| `/admin levels reward` / `remove-reward` / `rewards`     | Roles given at certain levels (also given to people already past that level) |
-| `/admin levels announcements`                            | Announce level-ups where they happen, in one channel, or not at all          |
-| `/admin levels set`                                      | Set someone's level, e.g. to carry it over from another bot                  |
-| `/admin shop add` / `edit` / `remove`                    | Manage shop items, prices and stock                                          |
-| `/admin shop orders`                                     | Deliver or refund orders waiting for staff                                   |
-| `/admin questions schedule` / `pause`                    | Post questions daily or weekly at a set hour, optionally pinging a role      |
-| `/admin questions add` / `queue` / `remove` / `post-now` | Manage the question queue (posted oldest first)                              |
-| `/admin protection configure` / `test`                   | Turn scam protection on/off, pick the timeout, or test a message             |
-| `/admin feeds add` / `list` / `remove` / `preview`       | Follow websites' RSS feeds                                                   |
+| Command                                                    | What it does                                                                                                |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `/admin setup overview`                                    | See every setting and check Tuli's permissions                                                              |
+| `/admin setup log-channel`                                 | Where staff alerts go                                                                                       |
+| `/admin setup timezone`                                    | The server's timezone (default: America/Chicago)                                                            |
+| `/admin points give` / `take`                              | Give or take points with a reason, logged to the staff channel                                              |
+| `/admin points history`                                    | See anyone's points activity                                                                                |
+| `/admin levels reward` / `remove-reward` / `rewards`       | Roles given at certain levels (also given to people already past that level)                                |
+| `/admin levels announcements`                              | Announce level-ups where they happen, in one channel, or not at all                                         |
+| `/admin levels set`                                        | Set someone's level, e.g. to carry it over from another bot                                                 |
+| `/admin shop add` / `edit` / `remove`                      | Manage shop items, prices and stock                                                                         |
+| `/admin shop orders`                                       | Deliver or refund orders waiting for staff                                                                  |
+| `/admin questions schedule` / `pause`                      | Post questions daily or weekly at a set hour, optionally pinging a role                                     |
+| `/admin questions add` / `add-choice` / `add-truefalse`    | Queue an open question (answered in a thread), a multiple-choice question or poll, or a true/false question |
+| `/admin questions queue` / `remove` / `post-now` / `close` | Manage the queue (posted oldest first), post right away, or reveal the results of button questions          |
+| `/admin protection configure` / `test`                     | Turn scam protection on/off, pick the timeout, or test a message                                            |
+| `/admin feeds add` / `list` / `remove` / `preview`         | Follow websites' RSS feeds                                                                                  |
 
 ## How it works
 
@@ -133,7 +134,15 @@ Chatting earns 15–25 XP, at most once a minute, so spamming doesn't help. Leve
 
 ### Questions
 
-Tuli posts the oldest queued question on schedule, opens a thread for answers, and reacts 🪙 to each person's first answer. If Tuli was offline at posting time, it posts once when it's back (not once per missed day). Staff get a heads-up when the queue is almost empty.
+Tuli posts the oldest queued question on schedule. If Tuli was offline at posting time, it posts once when it's back (not once per missed day). Staff get a heads-up when the queue is almost empty. There are three kinds:
+
+| Kind                                            | How people answer        | Points                                                                                                      |
+| ----------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| **Open** (`add`)                                | In the question's thread | 10 for their first answer                                                                                   |
+| **Multiple choice** (`add-choice`, 2–5 choices) | Buttons; answers lock in | 10 for the right answer, paid when it's revealed. Leave out the answer to make it a **poll**: 10 for voting |
+| **True/false** (`add-truefalse`)                | True / False buttons     | 10 for the right answer, paid when it's revealed                                                            |
+
+Button questions close when the next question posts, or right away with `/admin questions close`, which is handy for live trivia at a GBM. The post then shows how many people picked each choice, marks the right answer ✅, and Tuli announces the result under it. The right answer stays hidden until then, so nobody can pass it around.
 
 ### Scam protection
 
