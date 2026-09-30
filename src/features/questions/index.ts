@@ -157,10 +157,11 @@ function resultsAnnouncement(question: Question, counts: number[], winners: numb
 
 // ─── Posting and closing ─────────────────────────────────────────────────────
 
-/** Reveals the results of open button questions and pays out trivia winners. */
-async function closeButtonQuestions(guild: Guild): Promise<Question[]> {
+/** Reveals the results of open button questions (except `keepOpenId`) and pays out trivia winners. */
+async function closeButtonQuestions(guild: Guild, keepOpenId?: number): Promise<Question[]> {
   const closed: Question[] = [];
   for (const question of unclosedQuestions(guild.id)) {
+    if (question.id === keepOpenId) continue;
     const result = closeQuestion(question);
     if (!result) continue; // someone else closed it at the same moment
     closed.push(question);
@@ -195,7 +196,8 @@ async function postNextQuestion(guild: Guild): Promise<{ question: Question } | 
   }
   const question = claimNextQuestion(guild.id);
   if (!question) return { problem: "The question queue is empty. Add some with `/admin questions add`." };
-  await closeButtonQuestions(guild);
+  // Reveal the previous question's results. The new one is already marked posted, so leave it open.
+  await closeButtonQuestions(guild, question.id);
 
   const schedule = getSetting(guild.id, "questionSchedule");
   const label = `${questionLabel(schedule)} #${question.number}`;
