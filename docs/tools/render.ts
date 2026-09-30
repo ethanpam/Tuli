@@ -48,9 +48,11 @@ const page = await browser.newPage();
 // README-sized copies of Tuli's artwork in assets/ (the originals are too big for a web page).
 console.log("Artwork:");
 const profilePicture = asset("profile-pic.png");
+// Avatars are shown small, so zoom in on Tuli's face, ribbon and thumbs-up.
+const face = { left: 0.1575, top: 0.085, size: 0.66 };
 save("banner.png", await capture(page, framePage(asset("banner.png"), 1600, 800, "28px"), 1));
-save("tuli-avatar.png", await capture(page, framePage(profilePicture, 512, 512, "50%"), 1));
-const smallAvatar = await capture(page, framePage(profilePicture, 160, 160, "50%"), 1);
+save("tuli-avatar.png", await capture(page, framePage(profilePicture, 512, 512, "50%", face), 1));
+const smallAvatar = await capture(page, framePage(profilePicture, 160, 160, "50%", face), 1);
 
 // Tuli reports handler errors with console.error; any error means a picture would be wrong.
 const errors: unknown[][] = [];

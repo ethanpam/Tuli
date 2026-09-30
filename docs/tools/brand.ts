@@ -11,11 +11,21 @@ export function asset(name: string): string {
   return `data:image/png;base64,${readFileSync(join(ASSETS, name)).toString("base64")}`;
 }
 
-/** A page with one picture scaled to fit a frame, e.g. rounded corners or a circle. */
-export function framePage(src: string, width: number, height: number, radius = "0"): string {
+/** Part of a square picture, as fractions of its size: where the crop starts and how big it is. */
+export interface Crop {
+  left: number;
+  top: number;
+  size: number;
+}
+
+/** A page with one picture scaled to fit a frame (rounded corners, a circle...), optionally cropped. */
+export function framePage(src: string, width: number, height: number, radius = "0", crop?: Crop): string {
+  const picture = crop
+    ? `position:absolute;width:${100 / crop.size}%;left:${(-crop.left / crop.size) * 100}%;top:${(-crop.top / crop.size) * 100}%`
+    : "width:100%;height:100%;object-fit:cover";
   return `<!doctype html><html><body style="margin:0;background:transparent">
-  <div id="shot" style="width:${width}px;height:${height}px;border-radius:${radius};overflow:hidden">
-    <img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block">
+  <div id="shot" style="position:relative;width:${width}px;height:${height}px;border-radius:${radius};overflow:hidden;background:#fff">
+    <img src="${src}" style="display:block;${picture}">
   </div></body></html>`;
 }
 

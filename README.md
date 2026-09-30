@@ -77,7 +77,7 @@ Setting Tuli up takes about 15 minutes. You'll need:
    - Click **Reset Token** and copy the token. **Treat it like a password.** Anyone who has it can control your bot.
    - Turn off **Public Bot**, so only you can add Tuli to servers.
    - Under **Privileged Gateway Intents**, turn on **Message Content Intent**. Scam protection needs it to read messages.
-   - Give Tuli its look: upload [`assets/profile-pic.png`](assets/profile-pic.png) as the **Icon** and [`assets/banner.png`](assets/banner.png) as the **Banner**. Discord lets you crop them.
+   - Give Tuli its look: upload [`docs/images/tuli-avatar.png`](docs/images/tuli-avatar.png) (zoomed in on Tuli's face) as the **Icon** and [`assets/banner.png`](assets/banner.png) as the **Banner**. The full-size artwork is in [`assets/`](assets).
 
 ### Step 2: Download and run Tuli
 
@@ -536,4 +536,4 @@ docs/tools/         The script that draws this guide's pictures
 
 ### Updating the pictures
 
-The pictures in `docs/images` come from `npm run docs:images`. It makes README-sized copies of Tuli's artwork in `assets/` (the banner and round avatar), and uses the profile picture as Tuli's avatar in the screenshots. For the screenshots, it runs Tuli's real commands against an example server (`docs/tools/scenes.ts`), draws each channel the way Discord's dark theme shows it, and saves PNGs and GIFs with Chrome. It needs Google Chrome installed; set `CHROME_PATH` if Chrome isn't in the usual place. Run it after changing how anything looks, and commit the new images.
+The pictures in `docs/images` come from `npm run docs:images`. It makes README-sized copies of Tuli's artwork in `assets/`: the banner, and a round avatar zoomed in on Tuli's face, which is also Tuli's avatar in the screenshots. The crop is set by `face` in `docs/tools/render.ts`. For the screenshots, it runs Tuli's real commands against an example server (`docs/tools/scenes.ts`), draws each channel the way Discord's dark theme shows it, and saves PNGs and GIFs with Chrome. It needs Google Chrome installed; set `CHROME_PATH` if Chrome isn't in the usual place. Run it after changing how anything looks, and commit the new images.
