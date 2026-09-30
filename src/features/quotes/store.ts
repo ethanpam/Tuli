@@ -39,6 +39,9 @@ const selectLatestAuthorName = db.prepare(`
   SELECT author_name FROM quotes
   WHERE guild_id = $guildId AND author_id = $authorId
   ORDER BY number DESC LIMIT 1`);
+const selectRandomByName = db.prepare(`
+  SELECT * FROM quotes WHERE guild_id = $guildId AND author_name LIKE $pattern ESCAPE '\\'
+  ORDER BY RANDOM() LIMIT 1`);
 const deleteByNumber = db.prepare("DELETE FROM quotes WHERE guild_id = $guildId AND number = $number");
 
 // Ignores capitalization, extra spaces, and quote marks around the text.
@@ -86,6 +89,12 @@ export function countQuotes(guildId: string, authorId?: string): number {
 export function latestAuthorName(guildId: string, authorId: string): string | undefined {
   const row = selectLatestAuthorName.get({ guildId, authorId }) as { author_name: string } | undefined;
   return row?.author_name;
+}
+
+/** A random quote from someone whose saved name contains `name` (e.g. "sam" finds "Sam Lee"). */
+export function randomQuoteByName(guildId: string, name: string): Quote | undefined {
+  const pattern = `%${name.trim().replace(/[%_\\]/g, "\\$&")}%`;
+  return selectRandomByName.get({ guildId, pattern }) as Quote | undefined;
 }
 
 export function deleteQuote(guildId: string, number: number): void {

@@ -20,6 +20,14 @@ export interface Settings {
   scamProtection: boolean;
   /** How long to time out someone who posts a scam. 0 = don't time out. */
   scamTimeoutMinutes: number;
+  /** Whether members can chat with Tuli (needs GEMINI_API_KEY). Off unless turned on. */
+  aiEnabled: boolean;
+  /** Only chat in this channel (and its threads). Unset = everywhere. */
+  aiChannelId: string;
+  /** What Tuli knows about the server and group: what it is, when it meets, who runs it... */
+  aiAbout: string;
+  /** Tuli's personality, replacing the default. */
+  aiPersonality: string;
 }
 
 export interface QuestionSchedule {

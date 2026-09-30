@@ -83,6 +83,7 @@ const names: Record<string, string> = {
   scam: "scam-report.png",
   scamDm: "scam-dm.png",
   feed: "feed.png",
+  events: "events.png",
   setup: "setup.png",
 };
 for (const [key, shot] of Object.entries(shots)) {

@@ -1,6 +1,7 @@
 import type { Message } from "discord.js";
 import type { Feature } from "../types.js";
 import { commandMention } from "../ui.js";
+import { chatEnabled, chatWillAnswer } from "./chat/index.js";
 
 const greetings = ["Hi", "Hey", "Hello", "Yo", "Howdy"];
 
@@ -21,12 +22,15 @@ export const greetFeature: Feature = {
   name: "Greeting",
 
   async onMessage(message) {
-    if (!isTalkingToTuli(message)) return;
+    if (!isTalkingToTuli(message) || chatWillAnswer(message)) return;
     const greeting = greetings[Math.floor(Math.random() * greetings.length)];
     const name = message.member?.displayName ?? message.author.displayName;
     try {
       const help = commandMention(message.client, "tuli");
-      await message.reply(`${greeting}, ${name}! 👋 Use ${help} to see what I can do.`);
+      const invite = chatEnabled(message.guildId)
+        ? `Ask me anything, or use ${help} to see what I can do.`
+        : `Use ${help} to see what I can do.`;
+      await message.reply(`${greeting}, ${name}! 👋 ${invite}`);
     } catch (error) {
       // Usually means Tuli lacks Send Messages permission in this channel.
       console.error(`Couldn't reply in #${message.channelId}:`, error);

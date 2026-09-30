@@ -15,6 +15,8 @@ export interface Shot {
   messages: ChatMessage[];
   /** A button or menu custom ID to draw as "about to be clicked". */
   highlight?: string;
+  /** Someone shown as typing at the bottom, e.g. "Tuli". */
+  typing?: string;
 }
 
 const escape = (text: string) =>
@@ -314,6 +316,9 @@ const STYLES = `
   .reaction { display: inline-flex; align-items: center; gap: 6px; background: rgba(88,101,242,.15); border: 1px solid #5865f2; border-radius: 8px; padding: 1px 8px; font-size: 14px; }
   .reaction b { color: #c9cdfb; font-weight: 600; font-size: 13px; }
   .ephemeral { margin-top: 6px; font-size: 12px; color: #949ba4; }
+  .typing { display: flex; align-items: center; gap: 6px; margin: 10px 0 0 16px; font-size: 13px; color: #dbdee1; height: 18px; }
+  .typing .dots { display: inline-flex; gap: 3px; }
+  .typing .dots i { width: 6px; height: 6px; border-radius: 50%; background: #dbdee1; opacity: .75; }
 `;
 
 /** A full HTML page showing one channel with its messages. */
@@ -323,7 +328,11 @@ export function shotPage(shot: Shot, dir: Directory, { flat = false, minHeight =
   const bar = isDm
     ? `<span class="hash">@</span><span class="title">Tuli</span>`
     : `<span class="hash">#</span><span class="title">${escape(channel?.name ?? shot.channel)}</span>${channel?.topic ? `<span class="topic">${escape(channel.topic)}</span>` : ""}`;
-  const messages = shot.messages.map((message) => messageHtml(message, dir, shot.highlight)).join("");
+  const messages =
+    shot.messages.map((message) => messageHtml(message, dir, shot.highlight)).join("") +
+    (shot.typing
+      ? `<div class="typing"><span class="dots"><i></i><i></i><i></i></span><b>${escape(shot.typing)}</b> is typing…</div>`
+      : "");
   return `<!doctype html><html><head><meta charset="utf-8">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=block" rel="stylesheet">
   <style>${STYLES}</style></head>

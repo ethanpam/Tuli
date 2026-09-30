@@ -7,6 +7,8 @@ import {
   type ApplicationCommand,
 } from "discord.js";
 import type { Feature } from "../types.js";
+import { geminiConfig } from "./chat/gemini.js";
+import { getSetting } from "../settings.js";
 import { Colors, embed, truncate } from "../ui.js";
 
 interface Section {
@@ -63,6 +65,7 @@ export const helpFeature: Feature = {
           .sort((a, b) => a.name.localeCompare(b.name));
 
         const slash = commands.filter((command) => command.type === ApplicationCommandType.ChatInput);
+        const chatting = !!geminiConfig() && (getSetting(interaction.guildId, "aiEnabled") ?? false);
         const everyone = slash
           .filter((command) => !command.defaultMemberPermissions)
           .flatMap(commandSections)
@@ -78,7 +81,9 @@ export const helpFeature: Feature = {
             .setDescription(
               truncate(
                 [
-                  "Click a command to use it. You can also mention @Tuli to say hi.",
+                  chatting
+                    ? "Click a command to use it, or mention @Tuli to chat (reply to keep the conversation going).\n-# Chatting uses Google Gemini, so what you say to Tuli is sent to Google."
+                    : "Click a command to use it. You can also mention @Tuli to say hi.",
                   "",
                   ...everyone,
                   ...messageMenus,

@@ -1,6 +1,8 @@
 // The example server behind the README's pictures. Each scene runs Tuli's real commands the
 // way people would use them, then freezes the channel so it can be drawn.
+import { chatsSettled } from "../../src/features/chat/index.js";
 import { changePoints, claimDaily } from "../../src/features/economy/store.js";
+import { addEvent } from "../../src/features/events/store.js";
 import { fetchFeed, itemEmbed } from "../../src/features/feeds/index.js";
 import { addFeed, recordCheck } from "../../src/features/feeds/store.js";
 import type { FeedItem } from "../../src/features/feeds/parse.js";
@@ -10,11 +12,12 @@ import { addQuestion, TRUE_FALSE } from "../../src/features/questions/store.js";
 import { addQuote } from "../../src/features/quotes/store.js";
 import { addItem } from "../../src/features/shop/store.js";
 import { DEFAULT_TIMEZONE, setSetting } from "../../src/settings.js";
-import { localDate, previousDate } from "../../src/time.js";
+import { localDate, previousDate, zonedTime } from "../../src/time.js";
 import { initialAvatar } from "./brand.js";
 import { freezeTime } from "./clock.js";
 import type { Directory, Shot } from "./discord-html.js";
 import { World, type ChatMessage, type Person } from "../../test/support/fake-discord.js";
+import { fakeGemini } from "../../test/support/fake-gemini.js";
 
 export interface Animation {
   name: string;
@@ -75,7 +78,7 @@ export async function buildScenes(tuliAvatar: string) {
   });
 
   // ─── Saying hi ──────────────────────────────────────────────────────────────
-  await world.say(alex, "general", `<@${tuli.id}> hi!`, { mentionsTuli: true });
+  await world.say(alex, "general", `<@${tuli.id}> hi!`);
   shots.greet = shot("general", 2);
 
   // ─── /tuli ──────────────────────────────────────────────────────────────────
@@ -273,6 +276,85 @@ export async function buildScenes(tuliAvatar: string) {
   }
   for (const item of items) world.post("news", tuli, { embeds: [itemEmbed({ title: feedTitle, url: feedUrl }, item)] });
   shots.feed = shot("news", 2);
+
+  // ─── Events ─────────────────────────────────────────────────────────────────
+  const tz = DEFAULT_TIMEZONE;
+  const calendar = [
+    {
+      title: "GBM #4: Mooncake Night",
+      at: zonedTime(2026, 10, 8, 18, 30, tz),
+      location: "MU Great Hall",
+      description: "Mooncakes, lanterns and a trivia round. Bring a friend!",
+      link: "https://forms.gle/example",
+    },
+    {
+      title: "Boba social",
+      at: zonedTime(2026, 10, 17, 14, 0, tz),
+      location: "Campustown",
+      description: "We're taking over a boba shop. First drink is on us for members.",
+      link: "",
+    },
+    {
+      title: "GBM #5: Halloween",
+      at: zonedTime(2026, 10, 29, 18, 30, tz),
+      location: "MU Great Hall",
+      description: "Costumes encouraged, prizes for the best one.",
+      link: "",
+    },
+  ];
+  for (const event of calendar) {
+    addEvent(GUILD, {
+      title: event.title,
+      starts_at: event.at.getTime(),
+      location: event.location,
+      description: event.description,
+      link: event.link,
+      created_by: jordan.id,
+    });
+  }
+  await world.command(alex, "bot", "events");
+  shots.events = shot("bot", 1, alex.id);
+
+  // ─── Chatting with Tuli ─────────────────────────────────────────────────────
+  // Gemini's side is scripted here; the tools it calls (like claiming daily points) run for real.
+  process.env.GEMINI_API_KEY = "docs";
+  setSetting(GUILD, "aiEnabled", true);
+  setSetting(
+    GUILD,
+    "aiAbout",
+    "ASU is our student org at Iowa State. GBMs are every other Thursday at 6:30 PM in the MU Great Hall.",
+  );
+  const gemini = fakeGemini(
+    [
+      {
+        text: "welcome in!! 🎉 we're basically one big friend group at ISU: GBMs, food, games, and way too many boba runs. next GBM is this thursday at 6:30 in the MU great hall, you should come",
+      },
+    ],
+    [{ functionCall: { name: "claim_daily_points", args: {} } }],
+    [{ text: "you already grabbed today's points, silly 😆 come back after midnight to keep that 4-day streak alive" }],
+  );
+  world.addChannel({ id: "hangout", name: "hangout", topic: "Chat with Tuli and everyone else" });
+  const chatFrames: Animation["frames"] = [];
+  clock.advance(5 * 60_000);
+  const hello = world.post("hangout", alex, { content: `<@${tuli.id}> hiii I just joined, what's ASU about?` });
+  chatFrames.push({ shot: { ...shot("hangout", 4), typing: "Tuli" }, delay: 1800 });
+  await world.deliver(hello);
+  await chatsSettled();
+  chatFrames.push({ shot: shot("hangout", 4), delay: 3200 });
+  clock.advance(60_000);
+  const followUp = world.post(
+    "hangout",
+    alex,
+    { content: "omg yes!! can you grab my daily points while you're at it" },
+    { replyTo: world.latest("hangout").id },
+  );
+  chatFrames.push({ shot: { ...shot("hangout", 4), typing: "Tuli" }, delay: 1800 });
+  await world.deliver(followUp);
+  await chatsSettled();
+  chatFrames.push({ shot: shot("hangout", 4), delay: 4200 });
+  animations.push({ name: "chat", frames: chatFrames });
+  gemini.restore();
+  delete process.env.GEMINI_API_KEY;
 
   // ─── Setup ──────────────────────────────────────────────────────────────────
   // A healthy server: questions lined up and the news feed followed.

@@ -1,5 +1,6 @@
 import type { Feature } from "../types.js";
 import { createAdminFeature } from "./admin.js";
+import { chatFeature } from "./chat/index.js";
 import { economyFeature, pointsBoard } from "./economy/index.js";
 import { eventsFeature } from "./events/index.js";
 import { feedsFeature } from "./feeds/index.js";
@@ -19,6 +20,7 @@ const baseFeatures: Feature[] = [
   moderationFeature,
   createSetupFeature(() => features),
   helpFeature,
+  chatFeature,
   greetFeature,
   quotesFeature,
   economyFeature,

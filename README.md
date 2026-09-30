@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/trivia.gif" alt="A trivia question: members click an answer, then the results are revealed with the right answer marked" width="640">
+  <img src="docs/images/chat.gif" alt="Alex asks Tuli what ASU is about; Tuli answers casually and mentions the next GBM, then checks Alex's daily points" width="640">
 </p>
 
 ---
@@ -31,7 +31,7 @@
 1. [What Tuli does](#what-tuli-does)
 2. [Get started](#get-started): create the bot, run it, invite it
 3. [Set up your server](#set-up-your-server)
-4. [Feature guides](#feature-guides): [Quotes](#-quotes) · [Points](#-points) · [Levels](#-levels) · [Shop](#%EF%B8%8F-shop) · [Questions](#-questions-and-trivia) · [Scam protection](#%EF%B8%8F-scam-protection) · [Feeds](#-isu-news-feeds)
+4. [Feature guides](#feature-guides): [Chat with Tuli](#-chat-with-tuli) · [Events](#-events) · [Quotes](#-quotes) · [Points](#-points) · [Levels](#-levels) · [Shop](#%EF%B8%8F-shop) · [Questions](#-questions-and-trivia) · [Scam protection](#%EF%B8%8F-scam-protection) · [Feeds](#-isu-news-feeds)
 5. [Command reference](#command-reference)
 6. [Keeping Tuli online](#keeping-tuli-online)
 7. [Troubleshooting](#troubleshooting)
@@ -41,15 +41,17 @@
 
 ## What Tuli does
 
-|                  | For members                                                | For staff                                                       |
-| ---------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
-| 💬 **Quotes**    | Save funny moments and pull up a random one                | Remove any quote                                                |
-| 🪙 **Points**    | Daily rewards with streaks, send points to friends         | Reward people, e.g. for coming to a GBM                         |
-| 🏆 **Levels**    | Earn XP by chatting, level up, climb the leaderboard       | Hand out roles at certain levels                                |
-| 🛍️ **Shop**      | Spend points on roles and prizes                           | Sell roles (automatic) or prizes you deliver, like trivia hints |
-| ❓ **Questions** | Answer the question of the day, play trivia, vote in polls | Queue questions and choose when they post                       |
-| 🛡️ **Safety**    | Scams get cleaned up automatically                         | Scam reports with one-click ban; warnings and purge             |
-| 📰 **Feeds**     | ISU news and opportunities posted in a channel             | Follow any website's RSS feed, filtered by keywords             |
+|                  | For members                                                      | For staff                                                       |
+| ---------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- |
+| 🐰 **Chat**      | Talk to Tuli like a friend: about the group, events, your points | Tell Tuli about your group and shape its personality            |
+| 📅 **Events**    | See what's coming up                                             | Put GBMs and socials on the calendar                            |
+| 💬 **Quotes**    | Save funny moments and pull up a random one                      | Remove any quote                                                |
+| 🪙 **Points**    | Daily rewards with streaks, send points to friends               | Reward people, e.g. for coming to a GBM                         |
+| 🏆 **Levels**    | Earn XP by chatting, level up, climb the leaderboard             | Hand out roles at certain levels                                |
+| 🛍️ **Shop**      | Spend points on roles and prizes                                 | Sell roles (automatic) or prizes you deliver, like trivia hints |
+| ❓ **Questions** | Answer the question of the day, play trivia, vote in polls       | Queue questions and choose when they post                       |
+| 🛡️ **Safety**    | Scams get cleaned up automatically                               | Scam reports with one-click ban; warnings and purge             |
+| 📰 **Feeds**     | ISU news and opportunities posted in a channel                   | Follow any website's RSS feed, filtered by keywords             |
 
 Type **`/tuli`** in Discord any time to see every command you can use. Each one is clickable:
 
@@ -94,10 +96,12 @@ You should see:
 ```text
 Logged in as Tuli#1234 (in 0 servers)
 Invite link: https://discord.com/oauth2/authorize?client_id=...
-Registered 10 commands
+Registered 11 commands
 ```
 
 `npm run dev` restarts Tuli whenever you change a file. Leave it running.
+
+**Optional: let people chat with Tuli.** Get a free Gemini API key at [Google AI Studio](https://aistudio.google.com/apikey), add `GEMINI_API_KEY=your-key` to `.env`, and restart Tuli. Then turn chat on in your server (see [Chat with Tuli](#-chat-with-tuli)).
 
 ### Step 3: Invite Tuli to your server
 
@@ -133,6 +137,62 @@ Then turn on the features you want. Each guide below explains how.
 ---
 
 ## Feature guides
+
+### 🐰 Chat with Tuli
+
+Mention Tuli and just talk. It knows about your group and what's coming up, and it can check things for you (your points, level, today's question, the shop) or even claim your daily points.
+
+<p align="center"><img src="docs/images/chat.gif" alt="A conversation with Tuli: it welcomes a new member, then checks their daily points" width="620"></p>
+
+**Turn it on**
+
+1. Get a free API key at [Google AI Studio](https://aistudio.google.com/apikey), put it in `.env` as `GEMINI_API_KEY=your-key`, and restart Tuli.
+2. `/admin ai enable`. Add `channel:#hangout` to keep chatting in one channel.
+3. `/admin ai about`. A form opens: write what Tuli should know, such as what ASU is, when and where GBMs happen, who the officers are, links, and inside jokes. The more you write, the better its answers.
+4. Try it privately: `/admin ai test message:what's ASU about?`
+
+**How members use it**
+
+- **Mention Tuli** with anything: `@Tuli when's the next GBM?`
+- **Reply** to one of Tuli's messages to keep talking. It remembers the conversation through the reply chain.
+- **Ask it to do things:** "what level am I?", "claim my daily", "give me a quote from Sam", "what's in the shop?". It only acts for the person talking to it, and it can't do anything staff-only.
+
+**Personality.** Tuli talks like a friendly upperclassman texting a friend, not a customer-service bot: short, casual, a little playful. Change it with `/admin ai personality`; a form opens with the current personality, and clearing it goes back to the default. Some rules always apply, whatever the personality says:
+
+- It won't make up events, dates or facts it wasn't told.
+- It keeps things PG-13.
+- It never pings anyone.
+- If someone sincerely asks whether it's a bot, it says yes.
+
+**What it knows:** your `/admin ai about` text, the next 5 events on the calendar, today's date and time, and the commands members can use, which it links so they're clickable.
+
+> [!WARNING]
+> **Read the free tier's rules before turning chat on.**
+>
+> - With a free Gemini key, Google uses what people send Tuli, and Tuli's replies, to improve its products, and human reviewers may read them.
+> - Google's terms require users to be 18 or older, and don't allow apps likely to be used by people under 18. Don't turn chat on if your server may have members under 18.
+> - Let your members know. Tuli mentions Google in `/tuli`, and it only sends Google the messages people address to it, never general chat.
+
+**Limits:** to stay within the free tier, each person can message Tuli once every 5 seconds (extra messages get a ⏳), and each server gets up to 400 replies a day. Google's own limits for your key are shown in [AI Studio](https://aistudio.google.com). When Gemini is busy, Tuli says so instead of breaking. The default model is `gemini-3.5-flash-lite`; set `GEMINI_MODEL` in `.env` to use another, such as `gemini-3.8-flash`.
+
+> [!NOTE]
+> The conversation above is an example. Gemini's lines were scripted for the picture, while the tool Tuli used (checking Alex's daily points) ran for real. Real replies will vary.
+
+### 📅 Events
+
+Put GBMs and socials on Tuli's calendar. Members see them with `/events`, and Tuli uses them when people ask what's coming up.
+
+<p align="center"><img src="docs/images/events.png" alt="The /events list: GBM #4 Mooncake Night, a boba social, and a Halloween GBM" width="620"></p>
+
+```text
+/admin events add title:GBM #4: Mooncake Night date:10/8 time:6:30 PM location:MU Great Hall description:Mooncakes, lanterns and trivia! link:https://forms.gle/...
+/admin events remove event:GBM #4
+```
+
+- **Dates** can be written as `10/8`, `10/8/2026` or `2026-10-08`.
+- **Times** can be written as `6:30 PM`, `6pm` or `18:30`, in your server's timezone.
+- Events stay listed until 3 hours after they start.
+- Everyone sees the times in their own timezone.
 
 ### 💬 Quotes
 
@@ -253,6 +313,8 @@ Tuli posts a question on a schedule. You choose the kind:
   </tr>
 </table>
 
+<p align="center"><img src="docs/images/trivia.gif" alt="A trivia question: Alex clicks an answer and locks it in, then the results are revealed with the right answer marked" width="620"></p>
+
 **Set it up:**
 
 1. Add a few questions:
@@ -363,7 +425,8 @@ Tuli checks every 10 minutes and posts at most 5 items at a time. When you add a
 | Command                                              | What it does                                |
 | ---------------------------------------------------- | ------------------------------------------- |
 | `/tuli`                                              | See everything Tuli can do                  |
-| `@Tuli`                                              | Tuli says hi                                |
+| `@Tuli` + a message                                  | Chat with Tuli (once staff turn chat on)    |
+| `/events`                                            | See what's coming up                        |
 | `/quote add` · `random` · `list` · `show` · `delete` | Save, share and browse quotes               |
 | Right-click a message → Apps → **Save as quote**     | Save that message as a quote                |
 | `/points balance` · `daily` · `pay` · `history`      | Check, earn and send points                 |
@@ -389,17 +452,20 @@ Tuli checks every 10 minutes and posts at most 5 items at a time. When you add a
 <details>
 <summary><b>Admins</b> (Manage Server permission)</summary>
 
-| Command                                                                      | What it does                                         |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `/admin setup overview` · `log-channel` · `timezone`                         | Check setup and permissions; staff channel; timezone |
-| `/admin points give` · `take` · `history`                                    | Adjust points with a reason; see anyone's history    |
-| `/admin levels reward` · `remove-reward` · `rewards`                         | Roles given at certain levels                        |
-| `/admin levels announcements` · `set`                                        | Where level-ups are announced; set someone's level   |
-| `/admin shop add` · `edit` · `remove` · `orders`                             | Manage items, prices, stock and orders               |
-| `/admin questions schedule` · `pause` · `post-now` · `close`                 | When questions post; post or reveal right away       |
-| `/admin questions add` · `add-choice` · `add-truefalse` · `queue` · `remove` | Manage the question queue                            |
-| `/admin protection configure` · `test`                                       | Scam protection settings, or test a message          |
-| `/admin feeds add` · `list` · `remove` · `preview`                           | Follow websites' RSS feeds                           |
+| Command                                                                      | What it does                                           |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `/admin setup overview` · `log-channel` · `timezone`                         | Check setup and permissions; staff channel; timezone   |
+| `/admin points give` · `take` · `history`                                    | Adjust points with a reason; see anyone's history      |
+| `/admin levels reward` · `remove-reward` · `rewards`                         | Roles given at certain levels                          |
+| `/admin levels announcements` · `set`                                        | Where level-ups are announced; set someone's level     |
+| `/admin shop add` · `edit` · `remove` · `orders`                             | Manage items, prices, stock and orders                 |
+| `/admin questions schedule` · `pause` · `post-now` · `close`                 | When questions post; post or reveal right away         |
+| `/admin questions add` · `add-choice` · `add-truefalse` · `queue` · `remove` | Manage the question queue                              |
+| `/admin protection configure` · `test`                                       | Scam protection settings, or test a message            |
+| `/admin feeds add` · `list` · `remove` · `preview`                           | Follow websites' RSS feeds                             |
+| `/admin ai status` · `enable` · `disable` · `test`                           | Turn chatting with Tuli on or off, or try it privately |
+| `/admin ai about` · `personality`                                            | What Tuli knows about your group, and how it talks     |
+| `/admin events add` · `remove`                                               | Put events on the calendar                             |
 
 Server owners can change who may use `/admin` or `/mod` in **Server Settings → Integrations → Tuli**.
 
@@ -423,7 +489,7 @@ npx pm2 save && npx pm2 startup            # starts it again after a reboot
 
 **A hosting service** (Railway, Fly.io, Render...):
 
-1. Set the `DISCORD_TOKEN` environment variable. A `.env` file isn't needed.
+1. Set the `DISCORD_TOKEN` environment variable (and `GEMINI_API_KEY` if you use chat). A `.env` file isn't needed.
 2. Use `npm start` as the start command.
 3. Attach a **persistent volume** and set `DATABASE_PATH` to a file on it, e.g. `/data/tuli.db`.
 
@@ -439,7 +505,7 @@ npx pm2 save && npx pm2 startup            # starts it again after a reboot
 <details>
 <summary><b>Commands don't show up when I type <code>/</code></b></summary>
 
-Reload Discord with <kbd>Ctrl</kbd>+<kbd>R</kbd> (<kbd>Cmd</kbd>+<kbd>R</kbd>). Check that the terminal said `Registered 10 commands`. If Tuli was invited without the `applications.commands` scope, open the invite link it prints and authorize again.
+Reload Discord with <kbd>Ctrl</kbd>+<kbd>R</kbd> (<kbd>Cmd</kbd>+<kbd>R</kbd>). Check that the terminal said `Registered 11 commands`. If Tuli was invited without the `applications.commands` scope, open the invite link it prints and authorize again.
 
 </details>
 
@@ -475,6 +541,20 @@ Run `/admin setup overview`. The Questions section shows whether posting is paus
 <summary><b>Tuli answers everything twice</b></summary>
 
 Two copies are running with the same token, for example on your laptop and on a server. Stop one.
+
+</details>
+
+<details>
+<summary><b>Tuli doesn't answer when I mention it, or just says hi</b></summary>
+
+Run `/admin ai status`. Chat needs a `GEMINI_API_KEY` in `.env` (restart Tuli after adding it) and needs to be turned on with `/admin ai enable`. If it's limited to one channel, Tuli points people there. A bare `@Tuli` with nothing else always just gets a hello, and replies only count as chat when they reply to one of Tuli's chat messages, not its question or level-up posts.
+
+</details>
+
+<details>
+<summary><b>Tuli says "my brain needs a sec"</b></summary>
+
+Gemini's free tier ran out of requests for now. It resets on its own; check your limits in [AI Studio](https://aistudio.google.com). If it happens a lot, try a model with higher limits by setting `GEMINI_MODEL` in `.env`.
 
 </details>
 

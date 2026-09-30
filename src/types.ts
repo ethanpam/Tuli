@@ -7,6 +7,7 @@ import type {
   Message,
   MessageComponentInteraction,
   MessageContextMenuCommandInteraction,
+  ModalSubmitInteraction,
   PermissionsString,
   RESTPostAPIApplicationCommandsJSONBody,
   SlashCommandSubcommandGroupBuilder,
@@ -42,6 +43,12 @@ export interface ComponentHandler {
   execute(interaction: MessageComponentInteraction<"cached">, args: string[]): Promise<void>;
 }
 
+/** Handles pop-up forms (modals) whose custom ID is `prefix:arg1:arg2...`. */
+export interface ModalHandler {
+  prefix: string;
+  execute(interaction: ModalSubmitInteraction<"cached">, args: string[]): Promise<void>;
+}
+
 /** A group of staff-only subcommands under /admin, e.g. /admin shop add. */
 export interface AdminGroup {
   name: string;
@@ -60,6 +67,7 @@ export interface Feature {
   slashCommands?: SlashCommand[];
   messageCommands?: MessageCommand[];
   components?: ComponentHandler[];
+  modals?: ModalHandler[];
   admin?: AdminGroup;
   /** Runs for every message a person (not a bot) sends in a server. */
   onMessage?(message: Message<true>): Promise<typeof STOP | void>;

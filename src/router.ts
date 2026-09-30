@@ -1,5 +1,12 @@
 import type { Interaction, Message, RESTPostAPIApplicationCommandsJSONBody } from "discord.js";
-import { STOP, type ComponentHandler, type Feature, type MessageCommand, type SlashCommand } from "./types.js";
+import {
+  STOP,
+  type ComponentHandler,
+  type Feature,
+  type MessageCommand,
+  type ModalHandler,
+  type SlashCommand,
+} from "./types.js";
 import { replyNotice } from "./ui.js";
 
 /** Sends each interaction and message to the feature that handles it. */
@@ -7,16 +14,19 @@ export function createRouter(features: Feature[]) {
   const slashCommands = new Map<string, SlashCommand>();
   const messageCommands = new Map<string, MessageCommand>();
   const components = new Map<string, ComponentHandler>();
+  const modals = new Map<string, ModalHandler>();
   for (const feature of features) {
     for (const command of feature.slashCommands ?? []) slashCommands.set(command.data.name, command);
     for (const command of feature.messageCommands ?? []) messageCommands.set(command.data.name, command);
     for (const handler of feature.components ?? []) components.set(handler.prefix, handler);
+    for (const handler of feature.modals ?? []) modals.set(handler.prefix, handler);
   }
 
   function describe(interaction: Interaction): string {
     if (interaction.isCommand() || interaction.isAutocomplete()) return `/${interaction.commandName}`;
     if (interaction.isMessageComponent()) return `Component ${interaction.customId}`;
-    return `Interaction ${interaction.type}`;
+    if (interaction.isModalSubmit()) return `Form ${interaction.customId}`;
+    return "Interaction";
   }
 
   return {
@@ -41,6 +51,9 @@ export function createRouter(features: Feature[]) {
         } else if (interaction.isMessageComponent()) {
           const [prefix = "", ...args] = interaction.customId.split(":");
           await components.get(prefix)?.execute(interaction, args);
+        } else if (interaction.isModalSubmit()) {
+          const [prefix = "", ...args] = interaction.customId.split(":");
+          await modals.get(prefix)?.execute(interaction, args);
         }
       } catch (error) {
         console.error(`${describe(interaction)} failed:`, error);

@@ -85,6 +85,8 @@ export class World {
   readonly channels = new Map<string, Channel>();
   readonly roles = new Map<string, Role>();
   readonly people = new Map<string, Person>();
+  /** Pop-up forms Tuli has shown, newest last. */
+  readonly modals: unknown[] = [];
   readonly router;
   readonly guild: FakeGuild;
   readonly client;
@@ -164,22 +166,40 @@ export class World {
 
   // ─── Doing things ──────────────────────────────────────────────────────────
 
-  /** Someone sends a message; Tuli sees it like any other. */
-  async say(person: Person, channelId: string, content: string, { mentionsTuli = false } = {}): Promise<ChatMessage> {
-    const record = this.post(channelId, person, { content });
-    await this.deliver(record, { mentionsTuli });
+  /** Someone sends a message (optionally as a reply); Tuli sees it like any other. Mentions are read from the text. */
+  async say(
+    person: Person,
+    channelId: string,
+    content: string,
+    { replyTo }: { replyTo?: ChatMessage } = {},
+  ): Promise<ChatMessage> {
+    const record = this.post(channelId, person, { content }, replyTo ? { replyTo: replyTo.id } : {});
+    await this.deliver(record);
     return record;
   }
 
   /** Lets Tuli see a message that was already posted (so a screenshot can be taken in between). */
-  async deliver(record: ChatMessage, { mentionsTuli = false } = {}): Promise<void> {
+  async deliver(record: ChatMessage): Promise<void> {
     const parent = record.channelId.startsWith("thread-")
       ? this.messages.find((m) => m.id === record.channelId.slice("thread-".length))
       : undefined;
     if (parent?.thread) parent.thread.messages++;
-    const message = this.message(record);
-    message.mentions.has = () => mentionsTuli;
-    await this.router.handleMessage(message as never);
+    await this.router.handleMessage(this.message(record) as never);
+  }
+
+  /** Someone fills in and submits a pop-up form (modal) Tuli showed them. */
+  async submitModal(
+    person: Person,
+    channelId: string,
+    customId: string,
+    values: Record<string, string>,
+  ): Promise<void> {
+    await this.router.handleInteraction(
+      this.interaction("modal", person, channelId, {
+        customId,
+        fields: { getTextInputValue: (id: string) => values[id] ?? "" },
+      }) as never,
+    );
   }
 
   /** Someone runs a slash command, e.g. command(alex, "general", "points daily"). */
@@ -280,7 +300,11 @@ export class World {
 
   member(person: Person) {
     const roles = new Collection<string, unknown>();
+    const world = this;
     return {
+      get client() {
+        return world.client;
+      },
       id: person.id,
       user: this.user(person),
       guild: this.guild,
@@ -312,6 +336,8 @@ export class World {
       isVoiceBased: () => false,
       isSendable: () => true,
       isDMBased: () => false,
+      parentId: null,
+      sendTyping: async () => {},
       permissionsFor: (who: { id: string } | null) => ({
         has: () => who?.id === this.tuli.id || !!this.people.get(who?.id ?? "")?.staff,
       }),
@@ -346,12 +372,21 @@ export class World {
       get embeds() {
         return record.embeds;
       },
+      get components() {
+        return record.components;
+      },
+      reference: record.replyTo ? { messageId: record.replyTo } : null,
+      fetchReference: async () => {
+        const replied = this.messages.find((m) => m.id === record.replyTo && !m.deleted);
+        if (!replied) throw new Error("Unknown message");
+        return this.message(replied);
+      },
       createdTimestamp: record.time,
       url: `https://discord.com/channels/${this.guild.id}/${record.channelId}/${record.id}`,
       attachments: new Collection(),
       system: false,
       inGuild: () => true,
-      mentions: { has: (_: unknown) => false, roles: { has: () => false } },
+      mentions: this.mentions(record),
       edit: async (payload: unknown) => this.apply(record, payload),
       reply: async (payload: unknown) =>
         this.message(this.post(record.channelId, this.tuli, payload, { replyTo: record.id })),
@@ -361,6 +396,30 @@ export class World {
         this.addChannel({ id: `thread-${record.id}`, name });
         return this.channel(`thread-${record.id}`);
       },
+    };
+  }
+
+  /** Who a message mentions, read from its text (and whose message it replies to, since replies ping by default). */
+  private mentions(record: ChatMessage) {
+    const text = record.content ?? "";
+    const users = new Collection<string, unknown>();
+    const members = new Collection<string, unknown>();
+    for (const [, id] of text.matchAll(/<@!?([\w-]+)>/g)) {
+      const person = this.people.get(id!);
+      if (person) {
+        users.set(person.id, this.user(person));
+        members.set(person.id, this.member(person));
+      }
+    }
+    const roles = new Collection<string, unknown>();
+    for (const [, id] of text.matchAll(/<@&([\w-]+)>/g)) roles.set(id!, this.roleCache.get(id!));
+    const replied = record.replyTo ? this.messages.find((m) => m.id === record.replyTo) : undefined;
+    return {
+      users,
+      members,
+      roles,
+      repliedUser: replied ? this.user(replied.author) : null,
+      has: (target: { id: string }) => users.has(target.id),
     };
   }
 
@@ -391,7 +450,7 @@ export class World {
   }
 
   private interaction(
-    kind: "command" | "context" | "component",
+    kind: "command" | "context" | "component" | "modal",
     person: Person,
     channelId: string,
     extra: {
@@ -403,11 +462,13 @@ export class World {
       message?: unknown;
       target?: ChatMessage;
       targetMessage?: unknown;
+      fields?: unknown;
     },
   ) {
     const world = this;
     let reply: ChatMessage | null = null;
-    const usedCommand = kind === "component" ? undefined : { by: person, name: extra.usedName ?? "" };
+    const usedCommand =
+      kind === "command" || kind === "context" ? { by: person, name: extra.usedName ?? "" } : undefined;
     const privacy = (payload: unknown) =>
       isEphemeral(payload) ? { ephemeral: true, visibleTo: person.id } : { ephemeral: false };
     const interaction = {
@@ -424,7 +485,8 @@ export class World {
       deferred: false,
       inCachedGuild: () => true,
       isRepliable: () => true,
-      isCommand: () => kind !== "component",
+      isCommand: () => kind === "command" || kind === "context",
+      isModalSubmit: () => kind === "modal",
       isChatInputCommand: () => kind === "command",
       isAutocomplete: () => false,
       isMessageContextMenuCommand: () => kind === "context",
@@ -449,6 +511,10 @@ export class World {
           reply.content = undefined;
           world.apply(reply, payload);
         }
+      },
+      async showModal(modal: unknown) {
+        interaction.replied = true;
+        world.modals.push(json(modal));
       },
       async followUp(payload: unknown) {
         world.post(channelId, world.tuli, payload, privacy(payload));
