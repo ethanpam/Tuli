@@ -79,7 +79,8 @@ export async function fetchFeed(input: string): Promise<ParsedFeed> {
   return parseFeed(xml);
 }
 
-function itemEmbed(feed: Pick<Feed, "title" | "url">, item: FeedItem) {
+/** How one feed post looks when Tuli shares it. */
+export function itemEmbed(feed: Pick<Feed, "title" | "url">, item: FeedItem) {
   const post = embed()
     .setAuthor({ name: truncate(feed.title, 256) })
     .setTitle(truncate(item.title, 256))

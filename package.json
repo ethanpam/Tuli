@@ -6,8 +6,9 @@
     "start": "tsx --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "DATABASE_PATH=:memory: tsx --disable-warning=ExperimentalWarning --test test/*.test.ts",
-    "check": "npm run typecheck && npm test && prettier --check src test",
-    "format": "prettier --write src test"
+    "check": "npm run typecheck && npm test && prettier --check src test docs/tools",
+    "format": "prettier --write src test docs/tools",
+    "docs:images": "DATABASE_PATH=:memory: tsx --disable-warning=ExperimentalWarning docs/tools/render.ts"
   },
   "repository": {
     "type": "git",
@@ -22,7 +23,11 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
+    "@types/pngjs": "^6.0.5",
+    "gifenc": "^1.0.3",
+    "pngjs": "^7.0.0",
     "prettier": "^3.9.9",
+    "puppeteer-core": "^25.12.0",
     "typescript": "^7.0.2"
   },
   "engines": {

@@ -19,6 +19,8 @@ export interface Person {
   avatar: string;
   bot?: boolean;
   staff?: boolean;
+  /** Account made recently (as hacked or throwaway accounts often are). */
+  newAccount?: boolean;
 }
 
 export interface ChatMessage {
@@ -269,7 +271,7 @@ export class World {
       displayName: person.name,
       bot: !!person.bot,
       tag: person.name.toLowerCase(),
-      createdAt: new Date(Date.now() - (person.id === "riley" ? 40 : 900) * 24 * 60 * 60 * 1000),
+      createdAt: new Date(Date.now() - (person.newAccount ? 40 : 900) * 24 * 60 * 60 * 1000),
       displayAvatarURL: () => avatarUrl(person),
       toString: () => `<@${person.id}>`,
       send: async (payload: unknown) => this.post(`dm-${person.id}`, this.tuli, payload),
