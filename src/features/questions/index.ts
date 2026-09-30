@@ -395,7 +395,7 @@ const answerHandler: ComponentHandler = {
       await replyNotice(
         interaction,
         "success",
-        `🔒 Locked in: **${picked}**. If it's right, you'll get ${formatPoints(ANSWER_POINTS)} when the answer is revealed.`,
+        `Locked in: **${picked}**. If it's right, you'll get ${formatPoints(ANSWER_POINTS)} when the answer is revealed.`,
       );
     }
   },
